@@ -11,8 +11,8 @@ export default function SettingsPage() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar />
-      <main style={{ flex: 1, marginLeft: '260px', padding: '2rem' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <main className="main-content">
+        <div style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '1rem' }}>
           <header style={{ marginBottom: '2.5rem' }}>
             <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>환경 설정</h1>
             <p style={{ color: 'hsl(var(--muted-foreground))' }}>개인 프로필 및 앱 알림 설정을 관리합니다.</p>

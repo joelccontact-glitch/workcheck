@@ -13,7 +13,8 @@ export default function RoleSwitcher() {
       padding: '4px', 
       backgroundColor: 'hsl(var(--muted))', 
       borderRadius: '8px',
-      marginBottom: '1rem'
+      marginBottom: '1rem',
+      flexShrink: 0
     }}>
       <button 
         onClick={() => setRole('USER')}

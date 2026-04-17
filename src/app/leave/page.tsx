@@ -13,8 +13,8 @@ export default function LeavePage() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar />
-      <main style={{ flex: 1, marginLeft: '260px', padding: '2rem' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+      <main className="main-content">
+        <div style={{ maxWidth: '1000px', margin: '0 auto', paddingTop: '1rem' }}>
           <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
             <div>
               <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{isAdmin ? '결재 관리' : '연차 신청'}</h1>

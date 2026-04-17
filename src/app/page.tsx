@@ -19,14 +19,9 @@ export default function Home() {
       <Sidebar />
 
       {/* Main Content */}
-      <main style={{ flex: 1, marginLeft: '260px', padding: '2rem' }}>
-        <header style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          marginBottom: '2.5rem' 
-        }}>
-          <div style={{ position: 'relative', width: '300px' }}>
+      <main className="main-content">
+        <header className="responsive-header" style={{ marginBottom: '2.5rem' }}>
+          <div style={{ position: 'relative', width: '100%', maxWidth: '300px' }} className="hide-on-mobile">
             <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--muted-foreground))' }} />
             <input 
               type="text" 
