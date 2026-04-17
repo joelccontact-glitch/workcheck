@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { LayoutDashboard, Users, Calendar, Settings, MapPin, Menu as MenuIcon, X } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Settings, MapPin, Menu as MenuIcon, X, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 export default function Sidebar() {
-  const { role } = useAuth();
+  const { role, signOut } = useAuth();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -137,11 +137,26 @@ export default function Sidebar() {
           </Link>
         </nav>
 
-        <div style={{ marginTop: 'auto', padding: '1rem', borderRadius: 'var(--radius)', backgroundColor: 'hsl(var(--primary) / 0.05)', color: 'hsl(var(--primary))', fontSize: '0.75rem' }}>
-          <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{role} MODE</div>
-          <div style={{ opacity: 0.8 }}>
-            {isUser ? '개인 활동만 조회 가능합니다.' : '관리자 권한이 활성화됨'}
+        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ padding: '1rem', borderRadius: 'var(--radius)', backgroundColor: 'hsl(var(--primary) / 0.05)', color: 'hsl(var(--primary))', fontSize: '0.75rem' }}>
+            <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{role} MODE</div>
+            <div style={{ opacity: 0.8 }}>
+              {isUser ? '개인 활동만 조회 가능합니다.' : '관리자 권한이 활성화됨'}
+            </div>
           </div>
+          
+          <button 
+            onClick={signOut}
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: '0.75rem', 
+              padding: '0.75rem 1rem', borderRadius: 'var(--radius)', 
+              backgroundColor: 'transparent', border: '1px solid hsl(var(--border))',
+              color: 'hsl(var(--destructive))', fontSize: '0.875rem', fontWeight: 500,
+              cursor: 'pointer', transition: 'all 0.2s'
+            }}
+          >
+            <LogOut size={18} /> 로그아웃
+          </button>
         </div>
       </aside>
       
