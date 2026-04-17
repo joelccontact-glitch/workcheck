@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Clock, LogIn, LogOut, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useGeolocation } from '@/hooks/useGeolocation';
-import { isWithinZone, DEFAULT_WORK_ZONE } from '@/utils/geoUtils';
+import { findActiveZone, DEFAULT_WORK_ZONE, WorkZone } from '@/utils/geoUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Log {
@@ -17,16 +17,21 @@ export default function AttendanceCard() {
   const [status, setStatus] = useState<'IDLE' | 'WORKING' | 'CHECKING'>('IDLE');
   const [lastAction, setLastAction] = useState<Log | null>(null);
   const [isInZone, setIsInZone] = useState(false);
-  const [zone, setZone] = useState(DEFAULT_WORK_ZONE);
+  const [zones, setZones] = useState<WorkZone[]>([]);
+  const [activeZone, setActiveZone] = useState<WorkZone | null>(null);
 
   const loadData = () => {
     const savedStatus = localStorage.getItem('attendance-status');
     const savedLastAction = localStorage.getItem('last-action');
-    const savedZone = localStorage.getItem('work-zone');
+    const savedZones = localStorage.getItem('work-zones');
     
     if (savedStatus) setStatus(savedStatus as any);
     if (savedLastAction) setLastAction(JSON.parse(savedLastAction));
-    if (savedZone) setZone(JSON.parse(savedZone));
+    if (savedZones) {
+      setZones(JSON.parse(savedZones));
+    } else {
+      setZones([DEFAULT_WORK_ZONE]);
+    }
   };
 
   useEffect(() => {
@@ -36,20 +41,15 @@ export default function AttendanceCard() {
   }, []);
 
   useEffect(() => {
-    if (coords) {
-      const within = isWithinZone(
-        coords.latitude,
-        coords.longitude,
-        zone.latitude,
-        zone.longitude,
-        zone.radius
-      );
-      setIsInZone(within);
+    if (coords && zones.length > 0) {
+      const found = findActiveZone(coords.latitude, coords.longitude, zones);
+      setActiveZone(found);
+      setIsInZone(!!found);
     }
-  }, [coords, zone]);
+  }, [coords, zones]);
 
   const handleAction = (type: 'check-in' | 'check-out') => {
-    if (!coords || !isInZone) return;
+    if (!coords || !isInZone || !activeZone) return;
 
     setStatus('CHECKING');
     
@@ -58,7 +58,7 @@ export default function AttendanceCard() {
       const newLog: Log = {
         type,
         timestamp: new Date().toLocaleTimeString(),
-        location: zone.name
+        location: activeZone.name
       };
 
       const nextStatus = type === 'check-in' ? 'WORKING' : 'IDLE';
@@ -110,7 +110,7 @@ export default function AttendanceCard() {
           <div>
             <div style={{ fontSize: '0.75rem', color: 'hsl(var(--muted-foreground))' }}>현재 위치</div>
             <div style={{ fontSize: '1rem', fontWeight: 500 }}>
-              {loading ? '위치 확인 중...' : isInZone ? DEFAULT_WORK_ZONE.name : '지정된 장소 밖'}
+              {loading ? '위치 확인 중...' : activeZone ? activeZone.name : '지정된 장소 밖'}
             </div>
           </div>
           {!loading && !isInZone && (

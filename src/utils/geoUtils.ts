@@ -30,14 +30,32 @@ export const isWithinZone = (
   return distance <= radius;
 };
 
+/**
+ * Checks if a user is within any of the provided work zones
+ */
+export const findActiveZone = (
+  userLat: number,
+  userLon: number,
+  zones: WorkZone[]
+): WorkZone | null => {
+  for (const zone of zones) {
+    if (isWithinZone(userLat, userLon, zone.latitude, zone.longitude, zone.radius)) {
+      return zone;
+    }
+  }
+  return null;
+};
+
 export const DEFAULT_WORK_ZONE = {
+  id: 'default',
   name: "본사 (Office)",
-  latitude: 37.4979, // Initial default
+  latitude: 37.4979,
   longitude: 127.0276,
   radius: 200,
 };
 
 export interface WorkZone {
+  id: string;
   name: string;
   latitude: number;
   longitude: number;
