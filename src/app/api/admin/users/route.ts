@@ -13,7 +13,7 @@ export async function GET() {
   }
 
   // Transform data to match our UI expectations
-  const transformedUsers = users.map(user => ({
+  const transformedUsers = (users || []).map((user: any) => ({
     id: user.id,
     name: user.user_metadata.full_name || user.email?.split('@')[0],
     email: user.email,
