@@ -108,7 +108,7 @@ export default function TeamList() {
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: '0.925rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   {member.name} 
-                  {member.verified && <MailCheck size={14} color="hsl(var(--success))" title="인증됨" />}
+                  {member.verified && <MailCheck size={14} color="hsl(var(--success))" />}
                   <span style={{ fontWeight: 400, fontSize: '0.75rem', color: 'hsl(var(--muted-foreground))' }}>{member.rank}</span>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem' }}>
