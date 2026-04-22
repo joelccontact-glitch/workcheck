@@ -7,8 +7,16 @@ import { useAuth } from '@/context/AuthContext';
 import { Calendar, Plus } from 'lucide-react';
 
 export default function LeavePage() {
-  const { role } = useAuth();
+  const { role, loading } = useAuth();
   const isAdmin = role === 'ADMIN';
+
+  if (loading) {
+    return (
+      <div className="flex-center" style={{ minHeight: '100vh', width: '100%' }}>
+        <div className="animate-spin" style={{ width: 32, height: 32, border: '4px solid hsl(var(--primary))', borderTopColor: 'transparent', borderRadius: '50%' }} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>

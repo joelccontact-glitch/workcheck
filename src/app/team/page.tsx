@@ -7,15 +7,23 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function TeamPage() {
-  const { role } = useAuth();
+  const { role, loading } = useAuth();
   const router = useRouter();
 
   React.useEffect(() => {
-    if (role === 'USER') {
+    if (!loading && role === 'USER') {
       alert('관리자 권한이 필요합니다.');
       router.push('/');
     }
-  }, [role, router]);
+  }, [role, router, loading]);
+
+  if (loading) {
+    return (
+      <div className="flex-center" style={{ minHeight: '100vh', width: '100%' }}>
+        <div className="animate-spin" style={{ width: 32, height: 32, border: '4px solid hsl(var(--primary))', borderTopColor: 'transparent', borderRadius: '50%' }} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>

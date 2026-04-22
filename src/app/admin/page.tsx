@@ -9,9 +9,17 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
-  const { role } = useAuth();
+  const { role, loading } = useAuth();
   const router = useRouter();
   const { coords, loading: locLoading } = useGeolocation();
+
+  if (loading) {
+    return (
+      <div className="flex-center" style={{ minHeight: '100vh', width: '100%' }}>
+        <Loader2 className="animate-spin" size={32} color="hsl(var(--primary))" />
+      </div>
+    );
+  }
   
   const [zones, setZones] = React.useState<WorkZone[]>([]);
   const [isSaving, setIsSaving] = React.useState(false);

@@ -6,8 +6,8 @@ import { useAuth } from '@/context/AuthContext';
 import { User, Bell, Tablet, Moon } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { user, loading } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
+  const { user, loading, role } = useAuth();
+  const isAdmin = role === 'ADMIN';
 
   if (loading || !user) {
     return (
