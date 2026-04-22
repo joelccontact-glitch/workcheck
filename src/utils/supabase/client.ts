@@ -15,6 +15,8 @@ export function createClient() {
         getUser: async () => ({ data: { user: null }, error: null }),
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
         signOut: async () => ({ error: null }),
+        signInWithPassword: async () => ({ data: { user: null, session: null }, error: { message: 'Environment variables missing' } }),
+        signUp: async () => ({ data: { user: null, session: null }, error: { message: 'Environment variables missing' } }),
       }
     } as any; 
   }
