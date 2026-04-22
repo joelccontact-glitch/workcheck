@@ -5,6 +5,9 @@ export function createClient() {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
+    if (typeof window !== 'undefined') {
+      console.error('Supabase environment variables are missing! Check: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    }
     // Return a dummy client that won't crash on property access
     return {
       auth: {

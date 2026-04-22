@@ -14,6 +14,12 @@ export default function Home() {
   const { role, user, loading } = useAuth();
   const isAdmin = role === 'ADMIN';
 
+  React.useEffect(() => {
+    if (!loading && !user) {
+      window.location.href = '/login';
+    }
+  }, [loading, user]);
+
   if (loading || !user) {
     return (
       <div className="flex-center" style={{ minHeight: '100vh' }}>
