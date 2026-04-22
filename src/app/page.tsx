@@ -7,12 +7,20 @@ import TeamList from '@/components/TeamList';
 import LeaveRequests from '@/components/LeaveRequests';
 import Sidebar from '@/components/Sidebar';
 import RoleSwitcher from '@/components/RoleSwitcher';
-import { Bell, Search } from 'lucide-react';
+import { Bell, Search, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function Home() {
-  const { role, user } = useAuth();
+  const { role, user, loading } = useAuth();
   const isAdmin = role === 'ADMIN';
+
+  if (loading || !user) {
+    return (
+      <div className="flex-center" style={{ minHeight: '100vh' }}>
+        <Loader2 className="animate-spin" size={32} color="hsl(var(--primary))" />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
