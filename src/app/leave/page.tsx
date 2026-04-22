@@ -3,11 +3,13 @@
 import React from 'react';
 import Sidebar from '@/components/Sidebar';
 import LeaveRequests from '@/components/LeaveRequests';
+import LeaveRequestModal from '@/components/LeaveRequestModal';
 import { useAuth } from '@/context/AuthContext';
 import { Calendar, Plus } from 'lucide-react';
 
 export default function LeavePage() {
-  const { role, loading } = useAuth();
+  const { user, role, loading } = useAuth();
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
   const isAdmin = role === 'ADMIN';
 
   if (loading) {
@@ -31,39 +33,51 @@ export default function LeavePage() {
               </p>
             </div>
             {!isAdmin && (
-              <button className="btn btn-primary">
+              <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
                 <Plus size={18} /> 연차 신청하기
               </button>
             )}
           </header>
 
-          {isAdmin ? (
-            <LeaveRequests />
-          ) : (
-            <div className="card">
-              <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'hsl(var(--muted-foreground))' }}>
-                <Calendar size={64} style={{ marginBottom: '1.5rem', opacity: 0.1 }} />
-                <h3 style={{ color: 'hsl(var(--foreground))', marginBottom: '0.5rem' }}>내 연차 현황</h3>
-                <p style={{ fontSize: '0.875rem' }}>현재 남은 연차: 12.5일</p>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginTop: '2rem' }}>
-                   <div style={{ textAlign: 'center' }}>
-                     <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'hsl(var(--primary))' }}>15</div>
-                     <div style={{ fontSize: '0.75rem' }}>총 연차</div>
-                   </div>
-                   <div style={{ textAlign: 'center' }}>
-                     <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'hsl(var(--success))' }}>2.5</div>
-                     <div style={{ fontSize: '0.75rem' }}>사용</div>
-                   </div>
-                   <div style={{ textAlign: 'center' }}>
-                     <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'hsl(var(--primary))' }}>12.5</div>
-                     <div style={{ fontSize: '0.75rem' }}>잔여</div>
-                   </div>
+          <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? '1fr' : '1fr 350px', gap: '2rem' }}>
+            <div style={{ display: 'grid', gap: '2rem' }}>
+              <LeaveRequests />
+            </div>
+
+            {!isAdmin && (
+              <div className="card">
+                <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'hsl(var(--muted-foreground))' }}>
+                  <Calendar size={48} style={{ marginBottom: '1rem', opacity: 0.1 }} />
+                  <h3 style={{ color: 'hsl(var(--foreground))', marginBottom: '0.5rem' }}>내 연차 현황</h3>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '1.5rem' }}>
+                     <div style={{ textAlign: 'center' }}>
+                       <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'hsl(var(--primary))' }}>{user?.total_leave || 15}</div>
+                       <div style={{ fontSize: '0.65rem' }}>총 연차</div>
+                     </div>
+                     <div style={{ textAlign: 'center' }}>
+                       <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'hsl(var(--success))' }}>{user?.used_leave || 0}</div>
+                       <div style={{ fontSize: '0.65rem' }}>사용</div>
+                     </div>
+                     <div style={{ textAlign: 'center' }}>
+                       <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'hsl(var(--primary))' }}>{(user?.total_leave || 15) - (user?.used_leave || 0)}</div>
+                       <div style={{ fontSize: '0.65rem' }}>잔여</div>
+                     </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </main>
+
+      <LeaveRequestModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => {
+          // You could add a toast here or refresh the list
+          window.dispatchEvent(new Event('leave-updated'));
+        }}
+      />
     </div>
   );
 }

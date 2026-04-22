@@ -1,143 +1,91 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { User, MapPin, Clock, Search, Trash2, Loader2, MailCheck } from 'lucide-react';
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  rank: string;
-  status: string;
-  last_sign_in: string | null;
-  verified: boolean;
-}
+import React, { useState, useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { User, Shield, UserCog, Check, X, Loader2, Search, Filter } from 'lucide-react';
 
 export default function TeamList() {
-  const [team, setTeam] = useState<TeamMember[]>([]);
+  const supabase = createClient();
+  const [teams, setTeams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  const fetchTeam = async () => {
+  const fetchTeams = async () => {
     setLoading(true);
-    try {
-      const res = await fetch('/api/admin/users');
-      const data = await res.json();
-      if (data.users) setTeam(data.users);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+    const { data } = await supabase.from('profiles').select('*').order('full_name');
+    if (data) setTeams(data);
+    setLoading(false);
   };
 
   useEffect(() => {
-    fetchTeam();
+    fetchTeams();
   }, []);
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`${name} 사원을 삭제하시겠습니까?`)) return;
-    
-    try {
-      const res = await fetch(`/api/admin/users?id=${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setTeam(team.filter(m => m.id !== id));
-      } else {
-        alert('삭제에 실패했습니다.');
-      }
-    } catch (e) {
-      alert('오류가 발생했습니다.');
+  const handleUpdate = async (id: string, updates: any) => {
+    const { error } = await supabase.from('profiles').update(updates).eq('id', id);
+    if (!error) {
+      setEditingId(null);
+      fetchTeams();
     }
   };
 
-  const filteredTeam = team.filter(m => 
-    m.name.includes(searchTerm) || m.email.includes(searchTerm)
+  const filteredTeams = teams.filter(t => 
+    t.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.team?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="card animate-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h3 style={{ fontSize: '1.25rem' }}>팀원 현황 (실시간)</h3>
-        <div style={{ position: 'relative' }}>
-          <Search size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--muted-foreground))' }} />
+    <div className="card animate-in" style={{ padding: '1.5rem' }}>
+      <header style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <h3 style={{ fontSize: '1.125rem', fontWeight: 800 }}>전체 팀원 관리 ({teams.length})</h3>
+        <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+          <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--muted-foreground))' }} />
           <input 
-            type="text" 
-            placeholder="팀원 검색..." 
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            style={{ 
-              padding: '0.4rem 0.75rem 0.4rem 2rem', 
-              fontSize: '0.75rem', 
-              borderRadius: 'var(--radius)',
-              border: '1px solid hsl(var(--border))',
-              outline: 'none',
-              backgroundColor: 'hsl(var(--background))'
-            }} 
+            type="text" placeholder="이름 또는 팀 검색..."
+            value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+            style={{ width: '100%', padding: '0.5rem 1rem 0.5rem 2.25rem', borderRadius: '8px', border: '1px solid hsl(var(--border))', fontSize: '0.875rem' }}
           />
         </div>
-      </div>
+      </header>
 
       {loading ? (
-        <div className="flex-center" style={{ padding: '4rem' }}>
-          <Loader2 className="animate-spin" size={24} color="hsl(var(--primary))" />
-        </div>
-      ) : filteredTeam.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: 'hsl(var(--muted-foreground))' }}>
-          검색된 팀원이 없습니다.
-        </div>
+        <div className="flex-center" style={{ height: '200px' }}><Loader2 className="animate-spin" /></div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {filteredTeam.map((member) => (
-            <div key={member.id} style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              padding: '1rem', 
-              borderRadius: 'var(--radius)', 
-              backgroundColor: 'hsl(var(--muted) / 0.3)',
-              border: '1px solid hsl(var(--border) / 0.5)'
-            }}>
-              <div className="flex-center" style={{ 
-                width: 40, height: 40, borderRadius: '12px', 
-                backgroundColor: member.verified ? 'hsl(var(--primary) / 0.1)' : 'hsl(var(--muted))',
-                color: member.verified ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
-                marginRight: '1rem'
-              }}>
-                <User size={20} />
-              </div>
-              
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: '0.925rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {member.name} 
-                  {member.verified && <MailCheck size={14} color="hsl(var(--success))" />}
-                  <span style={{ fontWeight: 400, fontSize: '0.75rem', color: 'hsl(var(--muted-foreground))' }}>{member.rank}</span>
-                </div>
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'hsl(var(--muted-foreground))' }}>
-                    {member.email}
+          {filteredTeams.map((member) => (
+            <div key={member.id} className="glass" style={{ padding: '1rem', borderRadius: '12px', border: '1px solid hsl(var(--border)/0.3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', backgroundColor: member.role === 'ADMIN' ? 'hsl(var(--primary)/0.1)' : 'hsl(var(--muted))', color: member.role === 'ADMIN' ? 'hsl(var(--primary))' : 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
+                    {member.full_name?.[0]}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'hsl(var(--muted-foreground))' }}>
-                    접속: {member.last_sign_in ? new Date(member.last_sign_in).toLocaleDateString() : '미기록'}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontWeight: 700 }}>{member.full_name}</span>
+                      {member.role === 'ADMIN' && <Shield size={12} color="hsl(var(--primary))" />}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'hsl(var(--muted-foreground))' }}>{member.rank} | {member.team}</div>
                   </div>
                 </div>
-              </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <div style={{ 
-                  padding: '0.25rem 0.6rem', 
-                  borderRadius: '1rem', 
-                  fontSize: '0.7rem', 
-                  fontWeight: 600,
-                  backgroundColor: member.verified ? 'hsl(var(--success) / 0.1)' : 'hsl(var(--destructive) / 0.1)',
-                  color: member.verified ? 'hsl(var(--success))' : 'hsl(var(--destructive))'
-                }}>
-                  {member.verified ? '인증완료' : '인증대기'}
-                </div>
-                <button 
-                  onClick={() => handleDelete(member.id, member.name)}
-                  style={{ background: 'none', border: 'none', color: 'hsl(var(--muted-foreground))', cursor: 'pointer' }}
-                >
-                  <Trash2 size={16} />
-                </button>
+                {editingId === member.id ? (
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <select 
+                      defaultValue={member.role}
+                      onChange={(e) => handleUpdate(member.id, { role: e.target.value })}
+                      style={selectStyle}
+                    >
+                      <option value="USER">USER</option>
+                      <option value="ADMIN">ADMIN</option>
+                    </select>
+                    <button onClick={() => setEditingId(null)} className="btn btn-outline" style={{ padding: '0.4rem' }}><X size={16} /></button>
+                  </div>
+                ) : (
+                  <button onClick={() => setEditingId(member.id)} className="btn btn-outline" style={{ padding: '0.5rem', fontSize: '0.75rem', gap: '0.4rem' }}>
+                    <UserCog size={14} /> 관리
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -146,3 +94,7 @@ export default function TeamList() {
     </div>
   );
 }
+
+const selectStyle = {
+  padding: '0.4rem', borderRadius: '6px', border: '1px solid hsl(var(--border))', fontSize: '0.75rem', fontWeight: 600
+};

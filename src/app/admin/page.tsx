@@ -4,6 +4,7 @@ import React from 'react';
 import { Settings, MapPin, Shield, Save, Loader2, Plus, Trash2, Crosshair, History as HistoryIcon } from 'lucide-react';
 import { DEFAULT_WORK_ZONE, WorkZone } from '@/utils/geoUtils';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import { createClient } from '@/utils/supabase/client';
 import Sidebar from '@/components/Sidebar';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -12,6 +13,26 @@ export default function AdminPage() {
   const { role, loading } = useAuth();
   const router = useRouter();
   const { coords, loading: locLoading } = useGeolocation();
+  const supabase = createClient();
+  const [zones, setZones] = React.useState<WorkZone[]>([]);
+  const [isSaving, setIsSaving] = React.useState(false);
+
+  const fetchZones = async () => {
+    const { data } = await supabase.from('work_zones').select('*');
+    if (data && data.length > 0) {
+      setZones(data.map((z: any) => ({ ...z, id: z.id.toString() })));
+    } else {
+      setZones([DEFAULT_WORK_ZONE]);
+    }
+  };
+
+  React.useEffect(() => {
+    if (!loading && role === 'USER') {
+      alert('관리자 권한이 필요합니다.');
+      router.push('/');
+    }
+    if (!loading) fetchZones();
+  }, [role, router, loading]);
 
   if (loading) {
     return (
@@ -20,31 +41,33 @@ export default function AdminPage() {
       </div>
     );
   }
-  
-  const [zones, setZones] = React.useState<WorkZone[]>([]);
-  const [isSaving, setIsSaving] = React.useState(false);
 
-  React.useEffect(() => {
-    if (role === 'USER') {
-      alert('관리자 권한이 필요합니다.');
-      router.push('/');
-    }
-    const saved = localStorage.getItem('work-zones');
-    if (saved) {
-      setZones(JSON.parse(saved));
-    } else {
-      setZones([DEFAULT_WORK_ZONE]);
-    }
-  }, [role, router]);
-
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true);
-    localStorage.setItem('work-zones', JSON.stringify(zones));
-    setTimeout(() => {
-      setIsSaving(false);
-      alert('근무지 설정이 저장되었습니다.');
-      window.dispatchEvent(new Event('zone-updated'));
-    }, 500);
+    
+    // Simplistic sync: delete all and insert all (or you could do smarter UPSERT)
+    // For this demo, let's just use UPSERT or separate inserts.
+    // We'll map string IDs back to numbers if possible, or omit them for new ones.
+    const zonesToSave = zones.map(z => ({
+      name: z.name,
+      latitude: z.latitude,
+      longitude: z.longitude,
+      radius: z.radius
+    }));
+
+    const { error: delError } = await supabase.from('work_zones').delete().neq('id', 0); // Clear existing
+    if (!delError) {
+      const { error } = await supabase.from('work_zones').insert(zonesToSave);
+      if (!error) {
+        alert('근무지 설정이 저장되었습니다.');
+        window.dispatchEvent(new Event('zone-updated'));
+        fetchZones();
+      } else {
+        alert('저장 중 오류 발생: ' + error.message);
+      }
+    }
+    
+    setIsSaving(false);
   };
 
   const addZone = () => {

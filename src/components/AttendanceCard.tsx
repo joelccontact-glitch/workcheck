@@ -1,168 +1,173 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, LogIn, LogOut, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useGeolocation } from '@/hooks/useGeolocation';
-import { findActiveZone, DEFAULT_WORK_ZONE, WorkZone } from '@/utils/geoUtils';
-import { motion, AnimatePresence } from 'framer-motion';
-
-interface Log {
-  type: 'check-in' | 'check-out';
-  timestamp: string;
-  location: string;
-}
+import { useAuth } from '@/context/AuthContext';
+import { createClient } from '@/utils/supabase/client';
+import { MapPin, Clock, CheckCircle2, AlertCircle, Wifi, Navigation, Loader2 } from 'lucide-react';
 
 export default function AttendanceCard() {
-  const { coords, loading, error, refresh } = useGeolocation();
-  const [status, setStatus] = useState<'IDLE' | 'WORKING' | 'CHECKING'>('IDLE');
-  const [lastAction, setLastAction] = useState<Log | null>(null);
-  const [isInZone, setIsInZone] = useState(false);
-  const [zones, setZones] = useState<WorkZone[]>([]);
-  const [activeZone, setActiveZone] = useState<WorkZone | null>(null);
+  const { user } = useAuth();
+  const { coords, loading: geoLoading, error: geoError, accuracy } = useGeolocation();
+  const supabase = createClient();
 
-  const loadData = () => {
-    const savedStatus = localStorage.getItem('attendance-status');
-    const savedLastAction = localStorage.getItem('last-action');
-    const savedZones = localStorage.getItem('work-zones');
-    
-    if (savedStatus) setStatus(savedStatus as any);
-    if (savedLastAction) setLastAction(JSON.parse(savedLastAction));
-    if (savedZones) {
-      setZones(JSON.parse(savedZones));
-    } else {
-      setZones([DEFAULT_WORK_ZONE]);
+  const [status, setStatus] = useState<'OUT' | 'IN'>('OUT');
+  const [inTime, setInTime] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [timer, setTimer] = useState('00:00:00');
+  const [zones, setZones] = useState<any[]>([]);
+
+  const fetchStatus = async () => {
+    if (!user) return;
+    const today = new Date().toISOString().split('T')[0];
+    const { data } = await supabase
+      .from('work_logs')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('work_date', today)
+      .maybeSingle();
+
+    if (data) {
+      setStatus(data.check_out ? 'OUT' : 'IN');
+      setInTime(data.check_in);
     }
+    setLoading(false);
+  };
+
+  const fetchZones = async () => {
+    const { data } = await supabase.from('work_zones').select('*');
+    if (data) setZones(data);
   };
 
   useEffect(() => {
-    loadData();
-    window.addEventListener('zone-updated', loadData);
-    return () => window.removeEventListener('zone-updated', loadData);
-  }, []);
+    fetchStatus();
+    fetchZones();
+  }, [user]);
 
   useEffect(() => {
-    if (coords && zones.length > 0) {
-      const found = findActiveZone(coords.latitude, coords.longitude, zones);
-      setActiveZone(found);
-      setIsInZone(!!found);
+    if (status === 'IN' && inTime) {
+      const interval = setInterval(() => {
+        const diff = Date.now() - new Date(inTime).getTime();
+        const hours = Math.floor(diff / 3600000);
+        const mins = Math.floor((diff % 3600000) / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        setTimer(`${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`);
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setTimer('00:00:00');
     }
-  }, [coords, zones]);
+  }, [status, inTime]);
 
-  const handleAction = (type: 'check-in' | 'check-out') => {
-    if (!coords || !isInZone || !activeZone) return;
-
-    setStatus('CHECKING');
+  const handleCheckIn = async () => {
+    if (!user || !coords) return;
     
-    // Simulate API delay
-    setTimeout(() => {
-      const newLog: Log = {
-        type,
-        timestamp: new Date().toLocaleTimeString(),
-        location: activeZone.name
-      };
+    setLoading(true);
+    const today = new Date().toISOString().split('T')[0];
+    const { error } = await supabase.from('work_logs').insert({
+      user_id: user.id,
+      work_date: today,
+      check_in: new Date().toISOString(),
+      location_in: `POINT(${coords.longitude} ${coords.latitude})`,
+    });
 
-      const nextStatus = type === 'check-in' ? 'WORKING' : 'IDLE';
-      setStatus(nextStatus);
-      setLastAction(newLog);
-      
-      localStorage.setItem('attendance-status', nextStatus);
-      localStorage.setItem('last-action', JSON.stringify(newLog));
-      
-      // Save to history log
-      const history = JSON.parse(localStorage.getItem('attendance-history') || '[]');
-      localStorage.setItem('attendance-history', JSON.stringify([newLog, ...history].slice(0, 10)));
-      
-      // Force refresh for parent
-      window.dispatchEvent(new Event('attendance-updated'));
-    }, 1500);
+    if (!error) fetchStatus();
+    setLoading(false);
+  };
+
+  const handleCheckOut = async () => {
+    if (!user || !coords) return;
+
+    setLoading(true);
+    const today = new Date().toISOString().split('T')[0];
+    const { error } = await supabase.from('work_logs').update({
+      check_out: new Date().toISOString(),
+      location_out: `POINT(${coords.longitude} ${coords.latitude})`,
+    }).eq('user_id', user.id).eq('work_date', today);
+
+    if (!error) fetchStatus();
+    setLoading(false);
   };
 
   return (
-    <div className="card animate-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-        <div>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>근무 관리</h2>
-          <p style={{ color: 'hsl(var(--muted-foreground))', fontSize: '0.875rem' }}>
-            {new Date().toLocaleDateString('ko-KR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </p>
+    <div className="card animate-in shadow-xl" style={{ padding: '2rem', borderRadius: '28px', border: 'none', background: 'white' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        {/* Header Section */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.25rem' }}>실시간 근태 태깅</h3>
+            <p style={{ fontSize: '0.875rem', color: 'hsl(var(--muted-foreground))' }}>{new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' })}</p>
+          </div>
+          <div style={{ padding: '0.5rem 1rem', borderRadius: '12px', backgroundColor: status === 'IN' ? 'hsl(var(--success)/0.1)' : 'hsl(var(--muted))', color: status === 'IN' ? 'hsl(var(--success))' : 'hsl(var(--muted-foreground))', fontSize: '0.75rem', fontWeight: 700 }}>
+            {status === 'IN' ? '● 근무 중' : '○ 근무 종료'}
+          </div>
         </div>
+
+        {/* Timer Section - Responsive Scale */}
         <div style={{ 
-          padding: '0.5rem 0.75rem', 
-          borderRadius: '2rem', 
-          backgroundColor: status === 'WORKING' ? 'hsl(var(--success) / 0.1)' : 'hsl(var(--muted))',
-          color: status === 'WORKING' ? 'hsl(var(--success))' : 'hsl(var(--muted-foreground))',
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.375rem'
+          margin: '0 auto', width: 'clamp(180px, 50vw, 220px)', height: 'clamp(180px, 50vw, 220px)', 
+          borderRadius: '50%', border: '8px solid hsl(var(--muted)/0.5)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          position: 'relative', background: 'hsl(var(--muted)/0.1)',
+          transition: 'all 0.3s ease'
         }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: status === 'WORKING' ? 'hsl(var(--success))' : 'currentColor' }} />
-          {status === 'WORKING' ? '근무 중' : '근무 종료'}
-        </div>
-      </div>
-
-      <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius)', marginBottom: '1.5rem', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-          <div className="flex-center" style={{ width: 40, height: 40, borderRadius: '50%', backgroundColor: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
-            <MapPin size={20} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: 'hsl(var(--muted-foreground))' }}>현재 위치</div>
-            <div style={{ fontSize: '1rem', fontWeight: 500 }}>
-              {loading ? '위치 확인 중...' : activeZone ? activeZone.name : '지정된 장소 밖'}
-            </div>
-          </div>
-          {!loading && !isInZone && (
-             <div style={{ marginLeft: 'auto', color: 'hsl(var(--destructive))', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}>
-               <AlertCircle size={14} />
-               출근 불가 지점
-             </div>
+          {status === 'IN' && (
+            <div style={{ position: 'absolute', top: '-4px', left: '-4px', right: '-4px', bottom: '-4px', borderRadius: '50%', border: '8px solid hsl(var(--primary))', borderTopColor: 'transparent', animation: 'spin 10s linear infinite' }} />
           )}
+          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'hsl(var(--muted-foreground))', marginBottom: '0.25rem' }}>오늘 총 근무 시간</div>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-0.02em', fontFamily: 'monospace' }}>{timer}</div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div className="flex-center" style={{ width: 40, height: 40, borderRadius: '50%', backgroundColor: 'hsl(var(--secondary))', color: 'hsl(var(--muted-foreground))' }}>
-            <Clock size={20} />
+        {/* Action Buttons */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <button 
+            onClick={handleCheckIn}
+            disabled={status === 'IN' || loading || geoLoading}
+            className="btn btn-primary"
+            style={{ height: '3.5rem', borderRadius: '18px', fontSize: '1rem', fontWeight: 700, gap: '0.5rem', boxShadow: status === 'OUT' ? '0 10px 20px -5px rgba(var(--primary-rgb), 0.4)' : 'none' }}
+          >
+            {loading ? <Loader2 className="animate-spin" /> : <><Navigation size={20} /> 출근하기</>}
+          </button>
+          <button 
+            onClick={handleCheckOut}
+            disabled={status === 'OUT' || loading || geoLoading}
+            className="btn btn-outline"
+            style={{ height: '3.5rem', borderRadius: '18px', fontSize: '1rem', fontWeight: 700, gap: '0.5rem', border: '2px solid hsl(var(--border))' }}
+          >
+            {loading ? <Loader2 className="animate-spin" /> : <><LogOut size={20} /> 퇴근하기</>}
+          </button>
+        </div>
+
+        {/* Location Status Info */}
+        <div className="glass" style={{ padding: '1rem', borderRadius: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', border: '1px solid hsl(var(--border)/0.5)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div className="flex-center" style={{ width: 32, height: 32, borderRadius: '8px', backgroundColor: 'hsl(var(--primary)/0.1)', color: 'hsl(var(--primary))' }}>
+              <Navigation size={16} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.65rem', color: 'hsl(var(--muted-foreground))' }}>현재 위치</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700 }}>{geoLoading ? '확인 중...' : accuracy ? `${accuracy.toFixed(1)}m` : '알 수 없음'}</div>
+            </div>
           </div>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: 'hsl(var(--muted-foreground))' }}>최근 기록</div>
-            <div style={{ fontSize: '1rem', fontWeight: 500 }}>
-              {lastAction ? `${lastAction.type === 'check-in' ? '출근' : '퇴근'} ${lastAction.timestamp}` : '기록 없음'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div className="flex-center" style={{ width: 32, height: 32, borderRadius: '8px', backgroundColor: 'hsl(var(--primary)/0.1)', color: 'hsl(var(--primary))' }}>
+              <Wifi size={16} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.65rem', color: 'hsl(var(--muted-foreground))' }}>네트워크</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700 }}>내부 망</div>
             </div>
           </div>
         </div>
       </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-        <button 
-          className="btn btn-primary" 
-          disabled={status !== 'IDLE' || !isInZone || loading}
-          onClick={() => handleAction('check-in')}
-          style={{ height: '3.5rem', width: '100%', fontSize: '1rem' }}
-        >
-          {status === 'CHECKING' && <Loader2 className="animate-spin" size={20} />}
-          {status !== 'CHECKING' && <LogIn size={20} />}
-          출근하기
-        </button>
-        <button 
-          className="btn btn-outline" 
-          disabled={status !== 'WORKING' || !isInZone || loading}
-          onClick={() => handleAction('check-out')}
-          style={{ height: '3.5rem', width: '100%', fontSize: '1rem' }}
-        >
-          {status === 'CHECKING' && <Loader2 className="animate-spin" size={20} />}
-          {status !== 'CHECKING' && <LogOut size={20} />}
-          퇴근하기
-        </button>
-      </div>
-
-      {error && (
-        <div style={{ marginTop: '1rem', padding: '0.75rem', borderRadius: 'var(--radius)', backgroundColor: 'hsl(var(--destructive) / 0.1)', color: 'hsl(var(--destructive))', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <AlertCircle size={16} />
-          {error}. 브라우저 설정을 확인해 주세요.
-        </div>
-      )}
+      
+      <style jsx>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
+}
+
+function LogOut({ size }: { size: number }) {
+  return <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />;
 }

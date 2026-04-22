@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { History, MapPin, Calendar } from 'lucide-react';
+import { History, MapPin, Calendar, Loader2 } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 
 interface Log {
   type: 'check-in' | 'check-out';
@@ -11,16 +12,42 @@ interface Log {
 
 export default function HistoryLog() {
   const [history, setHistory] = useState<Log[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const loadHistory = () => {
-    const saved = localStorage.getItem('attendance-history');
-    if (saved) setHistory(JSON.parse(saved));
+  const supabase = createClient();
+
+  const loadHistory = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const { data: logs } = await supabase
+      .from('work_logs')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('timestamp', { ascending: false })
+      .limit(20);
+
+    if (logs) {
+      setHistory(logs.map((log: any) => ({
+        type: log.type,
+        timestamp: new Date(log.timestamp).toLocaleString('ko-KR', {
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        location: log.location_name
+      })));
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
     loadHistory();
-    
-    // Listen for updates from AttendanceCard
     window.addEventListener('attendance-updated', loadHistory);
     return () => window.removeEventListener('attendance-updated', loadHistory);
   }, []);
@@ -35,7 +62,11 @@ export default function HistoryLog() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {history.length > 0 ? (
+        {loading ? (
+          <div className="flex-center" style={{ padding: '3rem' }}>
+            <Loader2 className="animate-spin" size={24} color="hsl(var(--muted-foreground))" />
+          </div>
+        ) : history.length > 0 ? (
           history.map((log, index) => (
             <div key={index} style={{ 
               display: 'flex', 
