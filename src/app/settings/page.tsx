@@ -6,7 +6,16 @@ import { useAuth } from '@/context/AuthContext';
 import { User, Bell, Tablet, Moon } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+
+  if (loading || !user) {
+    return (
+      <div className="flex-center" style={{ minHeight: '100vh', width: '100%' }}>
+        <div className="animate-spin" style={{ width: 32, height: 32, border: '4px solid hsl(var(--primary))', borderTopColor: 'transparent', borderRadius: '50%' }} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
