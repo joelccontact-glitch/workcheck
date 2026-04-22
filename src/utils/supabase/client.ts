@@ -5,9 +5,15 @@ export function createClient() {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
-    // Return a dummy client or handle build-time static generation
-    // This prevents the build from failing if env vars are missing
-    return {} as any; 
+    // Return a dummy client that won't crash on property access
+    return {
+      auth: {
+        getSession: async () => ({ data: { session: null }, error: null }),
+        getUser: async () => ({ data: { user: null }, error: null }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        signOut: async () => ({ error: null }),
+      }
+    } as any; 
   }
 
   return createBrowserClient(url, anonKey)

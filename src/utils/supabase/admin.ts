@@ -5,7 +5,14 @@ export function createAdminClient() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
-    return {} as any;
+    return {
+      auth: {
+        admin: {
+          listUsers: async () => ({ data: { users: [] }, error: null }),
+          deleteUser: async () => ({ error: null }),
+        }
+      }
+    } as any;
   }
 
   return createClient(url, key, {

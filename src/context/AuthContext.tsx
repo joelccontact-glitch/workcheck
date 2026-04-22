@@ -32,7 +32,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Check initial session
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
+      const session = data?.session;
       setSupabaseUser(session?.user ?? null);
       
       // Load role from metadata or localStorage for now
@@ -46,12 +47,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
+    const { data: authData } = supabase.auth.onAuthStateChange((event: any, session: any) => {
       setSupabaseUser(session?.user ?? null);
       if (event === 'SIGNED_OUT') {
         localStorage.removeItem('user-role');
       }
     });
+    const { subscription } = authData || { subscription: { unsubscribe: () => {} } };
 
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
