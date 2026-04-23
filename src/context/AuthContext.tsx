@@ -9,7 +9,7 @@ type Role = 'ADMIN' | 'USER';
 
 interface Profile {
   full_name: string;
-  role: Role;
+  role: string; // "ADMIN", "USER", 또는 "ADMIN,USER" 형태
   department_id?: number;
   team: string;
   rank: string;
@@ -18,6 +18,7 @@ interface Profile {
   work_start_time: string;
   work_end_time: string;
   cached_uid?: string;
+  active_role: Role; // 현재 세션에서 사용 중인 역할
 }
 
 interface AuthContextType {
@@ -41,7 +42,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const CACHE_KEY = 'workcheck_profile_v5';
+const CACHE_KEY = 'workcheck_profile_v6';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [sessionChecked, setSessionChecked] = useState(false); // 세션 확인 완료 여부
+  const [sessionChecked, setSessionChecked] = useState(false);
   const isFetching = useRef(false);
   const loadingStateRef = useRef(true);
 
@@ -62,14 +63,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const publicPaths = ['/login', '/signup', '/auth/callback'];
   const isPublicPath = publicPaths.includes(pathname);
 
-  // 1. 캐시 로드
   useEffect(() => {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
         setProfile(parsed);
-        // 캐시가 있어도 일단 세션 확인 전까지는 loading을 완전히 풀지 않음 (깜빡임 방지)
       } catch (e) {
         console.error('Cache error', e);
       }
@@ -91,12 +90,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data) {
         const intentRole = localStorage.getItem('login_intent_role') as Role;
-        const actualRole = (data.role as Role) || 'USER';
-        const finalRole = (intentRole === 'ADMIN' && actualRole !== 'ADMIN') ? 'USER' : (intentRole || actualRole);
+        const dbRoles = (data.role || 'USER').split(',').map((r: string) => r.trim());
+        
+        // 실제 권한 목록에 사용자가 선택한 역할이 있는지 확인
+        let finalRole: Role = 'USER';
+        if (intentRole && dbRoles.includes(intentRole)) {
+          finalRole = intentRole;
+        } else if (dbRoles.includes('ADMIN')) {
+          finalRole = 'ADMIN'; // 의도가 없으면 관리자 우선
+        }
 
         const newProfile: Profile = {
           full_name: data.full_name || '사용자',
-          role: finalRole,
+          role: data.role || 'USER',
+          active_role: finalRole,
           department_id: data.department_id,
           team: data.team || '소속 없음',
           rank: data.rank || '직급 없음',
@@ -161,12 +168,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
           await fetchProfile(user.id, true);
         } else if (event === 'SIGNED_OUT') {
-          console.log('[Auth] SIGNED_OUT detected');
           setProfile(null);
           setSupabaseUser(null);
-          localStorage.clear(); // 모든 로컬 데이터 삭제
+          localStorage.clear();
           setLoading(false);
-          // 즉시 로그인 페이지로 강제 이동 (Next.js router 대신 window.location 사용으로 확실히 초기화)
           window.location.href = '/login';
         }
       }
@@ -180,21 +185,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleSignOut = async () => {
     setLoading(true);
-    console.log('[Auth] Starting signOut...');
-    
-    // 1. 로컬 캐시 먼저 파기
     localStorage.clear();
     sessionStorage.clear();
-    
-    // 2. Supabase 로그아웃 호출
     await supabase.auth.signOut();
-    
-    // 3. 상태 초기화
     setProfile(null);
     setSupabaseUser(null);
     setLoading(false);
-    
-    // 4. 강력한 페이지 이동 (모든 메모리 초기화)
     window.location.href = '/login';
   };
 
@@ -204,17 +200,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setRole = (newRole: Role) => {
     if (profile) {
-      const updated = { ...profile, role: newRole };
+      const updated = { ...profile, active_role: newRole };
       setProfile(updated);
       localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
     }
   };
 
   const userData = useMemo(() => {
-    // 세션 확인이 끝났는데 유저가 없으면 무조건 null 반환
     if (sessionChecked && !supabaseUser) return null;
-    
-    // 세션 확인 중일 때만 캐시된 정보를 임시로 사용
     const targetUser = supabaseUser || (profile?.cached_uid ? { id: profile.cached_uid, email: '' } : null);
     if (!targetUser) return null;
 
@@ -233,7 +226,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ 
-      role: profile?.role || 'USER', 
+      role: profile?.active_role || 'USER', 
       user: userData, 
       loading,
       signOut: handleSignOut,

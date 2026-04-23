@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { User, Shield, UserCog, Check, X, Loader2, Search, Filter } from 'lucide-react';
+import { User, Shield, UserCog, Check, X, Loader2, Search, Filter, ShieldAlert, UserCheck } from 'lucide-react';
 
 export default function TeamList() {
   const supabase = createClient();
@@ -22,11 +22,21 @@ export default function TeamList() {
     fetchTeams();
   }, []);
 
-  const handleUpdate = async (id: string, updates: any) => {
-    const { error } = await supabase.from('profiles').update(updates).eq('id', id);
+  const handleRoleToggle = async (id: string, currentRoles: string, roleToToggle: string) => {
+    // 역할을 쉼표로 구분하여 관리 (예: "ADMIN,USER")
+    let roleArray = currentRoles ? currentRoles.split(',').map(r => r.trim()).filter(Boolean) : [];
+    
+    if (roleArray.includes(roleToToggle)) {
+      roleArray = roleArray.filter(r => r !== roleToToggle);
+    } else {
+      roleArray.push(roleToToggle);
+    }
+
+    const newRoleString = roleArray.join(',');
+    const { error } = await supabase.from('profiles').update({ role: newRoleString }).eq('id', id);
+    
     if (!error) {
-      setEditingId(null);
-      fetchTeams();
+      setTeams(prev => prev.map(t => t.id === id ? { ...t, role: newRoleString } : t));
     }
   };
 
@@ -36,65 +46,112 @@ export default function TeamList() {
   );
 
   return (
-    <div className="card animate-in" style={{ padding: '1.5rem' }}>
-      <header style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <h3 style={{ fontSize: '1.125rem', fontWeight: 800 }}>전체 팀원 관리 ({teams.length})</h3>
-        <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
-          <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--muted-foreground))' }} />
+    <div className="card animate-in shadow-lg" style={{ padding: '1.5rem', borderRadius: '24px', border: 'none', background: 'white' }}>
+      <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em' }}>직원 권한 관리 ({teams.length})</h3>
+          <p style={{ fontSize: '0.8rem', color: 'hsl(var(--muted-foreground))' }}>직원별로 관리자/사용자 권한을 복수로 부여할 수 있습니다.</p>
+        </div>
+        <div style={{ position: 'relative', flex: 1, maxWidth: '300px' }}>
+          <Search size={16} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--muted-foreground))' }} />
           <input 
             type="text" placeholder="이름 또는 팀 검색..."
             value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-            style={{ width: '100%', padding: '0.5rem 1rem 0.5rem 2.25rem', borderRadius: '8px', border: '1px solid hsl(var(--border))', fontSize: '0.875rem' }}
+            style={{ width: '100%', padding: '0.625rem 1rem 0.625rem 2.5rem', borderRadius: '12px', border: '1px solid hsl(var(--border))', fontSize: '0.875rem', outline: 'none' }}
           />
         </div>
       </header>
 
       {loading ? (
-        <div className="flex-center" style={{ height: '200px' }}><Loader2 className="animate-spin" /></div>
+        <div className="flex-center" style={{ height: '300px' }}><Loader2 className="animate-spin" color="hsl(var(--primary))" /></div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {filteredTeams.map((member) => (
-            <div key={member.id} className="glass" style={{ padding: '1rem', borderRadius: '12px', border: '1px solid hsl(var(--border)/0.3)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', backgroundColor: member.role === 'ADMIN' ? 'hsl(var(--primary)/0.1)' : 'hsl(var(--muted))', color: member.role === 'ADMIN' ? 'hsl(var(--primary))' : 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
-                    {member.full_name?.[0]}
-                  </div>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontWeight: 700 }}>{member.full_name}</span>
-                      {member.role === 'ADMIN' && <Shield size={12} color="hsl(var(--primary))" />}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {filteredTeams.map((member) => {
+            const roles = member.role ? member.role.split(',') : [];
+            const isAdmin = roles.includes('ADMIN');
+            const isUser = roles.includes('USER');
+
+            return (
+              <div key={member.id} className="glass" style={{ padding: '1.25rem', borderRadius: '16px', border: '1px solid hsl(var(--border)/0.5)', transition: 'all 0.2s ease' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ 
+                      width: 44, height: 44, borderRadius: '14px', 
+                      backgroundColor: isAdmin ? 'hsl(var(--primary)/0.1)' : 'hsl(var(--muted))', 
+                      color: isAdmin ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem'
+                    }}>
+                      {member.full_name?.[0]}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'hsl(var(--muted-foreground))' }}>{member.rank} | {member.team}</div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontWeight: 800, fontSize: '1rem' }}>{member.full_name}</span>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          {isAdmin && <span title="관리자 권한" style={badgeStyle('ADMIN')}><Shield size={10} /> ADMIN</span>}
+                          {isUser && <span title="사용자 권한" style={badgeStyle('USER')}><UserCheck size={10} /> USER</span>}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'hsl(var(--muted-foreground))', marginTop: '2px' }}>{member.rank} / {member.team}</div>
+                    </div>
+                  </div>
+
+                  {/* 권한 토글 스위치 (복수 선택 가능) */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', backgroundColor: 'hsl(var(--muted)/0.3)', padding: '0.5rem', borderRadius: '12px' }}>
+                    <label style={checkboxLabelStyle}>
+                      <input 
+                        type="checkbox" 
+                        checked={isUser} 
+                        onChange={() => handleRoleToggle(member.id, member.role, 'USER')}
+                        style={checkboxStyle}
+                      />
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>사용자</span>
+                    </label>
+                    <div style={{ width: '1px', height: '16px', backgroundColor: 'hsl(var(--border))' }} />
+                    <label style={checkboxLabelStyle}>
+                      <input 
+                        type="checkbox" 
+                        checked={isAdmin} 
+                        onChange={() => handleRoleToggle(member.id, member.role, 'ADMIN')}
+                        style={checkboxStyle}
+                      />
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isAdmin ? 'hsl(var(--primary))' : 'inherit' }}>관리자</span>
+                    </label>
                   </div>
                 </div>
-
-                {editingId === member.id ? (
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <select 
-                      defaultValue={member.role}
-                      onChange={(e) => handleUpdate(member.id, { role: e.target.value })}
-                      style={selectStyle}
-                    >
-                      <option value="USER">USER</option>
-                      <option value="ADMIN">ADMIN</option>
-                    </select>
-                    <button onClick={() => setEditingId(null)} className="btn btn-outline" style={{ padding: '0.4rem' }}><X size={16} /></button>
-                  </div>
-                ) : (
-                  <button onClick={() => setEditingId(member.id)} className="btn btn-outline" style={{ padding: '0.5rem', fontSize: '0.75rem', gap: '0.4rem' }}>
-                    <UserCog size={14} /> 관리
-                  </button>
-                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-const selectStyle = {
-  padding: '0.4rem', borderRadius: '6px', border: '1px solid hsl(var(--border))', fontSize: '0.75rem', fontWeight: 600
+const badgeStyle = (type: string) => ({
+  fontSize: '0.6rem',
+  fontWeight: 800,
+  padding: '0.15rem 0.4rem',
+  borderRadius: '4px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '3px',
+  backgroundColor: type === 'ADMIN' ? 'hsl(var(--primary)/0.1)' : 'hsl(var(--success)/0.1)',
+  color: type === 'ADMIN' ? 'hsl(var(--primary))' : 'hsl(var(--success))',
+  border: `1px solid ${type === 'ADMIN' ? 'hsl(var(--primary)/0.2)' : 'hsl(var(--success)/0.2)}`
+});
+
+const checkboxLabelStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  cursor: 'pointer',
+  userSelect: 'none',
+  padding: '0 0.5rem'
+};
+
+const checkboxStyle: React.CSSProperties = {
+  width: '16px',
+  height: '16px',
+  accentColor: 'hsl(var(--primary))',
+  cursor: 'pointer'
 };
