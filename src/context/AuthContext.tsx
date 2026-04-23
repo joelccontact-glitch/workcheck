@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { useRouter, usePathname } from 'next/navigation';
@@ -48,20 +48,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const isFetching = useRef(false);
 
   const publicPaths = ['/login', '/signup', '/auth/callback'];
   const isPublicPath = publicPaths.includes(pathname);
 
   const fetchProfile = async (userId: string) => {
+    if (isFetching.current) return;
+    isFetching.current = true;
+    
+    console.log('[Auth] Fetching profile for:', userId);
+    
+    // Failsafe timeout: 5초 후에도 응답 없으면 강제 로딩 해제
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.warn('[Auth] Profile fetch timed out.');
+        setLoading(false);
+      }
+    }, 5000);
+
     try {
-      console.log('[Auth] Fetching profile for:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (data) {
+      if (error) {
+        console.error('[Auth] Profile query error:', error.message, error.code);
+        setProfile(null);
+        if (!isPublicPath) router.replace('/signup');
+      } else if (data) {
+        console.log('[Auth] Profile loaded successfully');
         setProfile({
           full_name: data.full_name || '사용자',
           role: (data.role as Role) || 'USER',
@@ -74,29 +92,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           work_end_time: data.work_end_time || '18:00:00'
         });
       } else {
-        console.warn('[Auth] No profile found.');
         setProfile(null);
         if (!isPublicPath) router.replace('/signup');
       }
     } catch (err) {
-      console.error('[Auth] Error fetching profile:', err);
+      console.error('[Auth] Unexpected error during fetch:', err);
       setProfile(null);
     } finally {
-      setLoading(false); // 프로필 조회(성공/실패) 후에만 로딩 해제
+      clearTimeout(timeoutId);
+      isFetching.current = false;
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     const initAuth = async () => {
-      console.log('[Auth] Initializing...');
       const { data } = await supabase.auth.getSession();
-      const session = data?.session;
-      const user = session?.user ?? null;
-      
+      const user = data?.session?.user ?? null;
       setSupabaseUser(user);
       
       if (user) {
-        // 사용자가 있다면 프로필을 가져올 때까지 loading을 유지함
         await fetchProfile(user.id);
       } else {
         setLoading(false);
@@ -107,20 +122,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event: any, session: any) => {
-        console.log('[Auth] Event:', event);
+      async (event, session) => {
         const user = session?.user ?? null;
         setSupabaseUser(user);
         
-        if (user) {
-          setLoading(true); // 권한 정보를 다시 가져올 때 로딩을 켬
+        if (user && event === 'SIGNED_IN') {
+          setLoading(true);
           await fetchProfile(user.id);
-        } else {
+        } else if (event === 'SIGNED_OUT') {
           setProfile(null);
           setLoading(false);
-          if (!isPublicPath && event === 'SIGNED_OUT') {
-            router.replace('/login');
-          }
+          if (!isPublicPath) router.replace('/login');
         }
       }
     );
@@ -133,12 +145,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handleSignOut = async () => {
     setLoading(true);
     await supabase.auth.signOut();
+    setProfile(null);
+    setSupabaseUser(null);
     router.replace('/login');
   };
 
   const refreshProfile = async () => {
     if (supabaseUser) {
-      setLoading(true);
       await fetchProfile(supabaseUser.id);
     }
   };
