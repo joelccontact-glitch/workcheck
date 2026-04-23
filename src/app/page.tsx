@@ -13,6 +13,7 @@ import RequestCenter from '@/components/RequestCenter';
 import OvertimeSummary from '@/components/OvertimeSummary';
 import MyPage from '@/components/MyPage';
 import AdminWorkplace from '@/components/AdminWorkplace';
+import WorkZoneManager from '@/components/WorkZoneManager';
 
 export default function App() {
   const { user, role, loading, signOut } = useAuth();
@@ -149,10 +150,8 @@ export default function App() {
             {activeTab === 'approvals' && isAdmin && <LeaveRequests />}
             {activeTab === 'team' && isAdmin && <TeamList />}
             {activeTab === 'workplace_admin' && isAdmin && (
-              <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
-                <MapPin size={48} style={{ margin: '0 auto 1.5rem', color: 'hsl(var(--primary))' }} />
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>전체 근무지 현황 관리</h3>
-                <p style={{ color: 'hsl(var(--muted-foreground))' }}>직원들이 설정한 근무지 정보를 승인하거나 관리하는 기능입니다. (준비 중)</p>
+              <div className="card animate-in shadow-xl" style={{ padding: '2rem', borderRadius: '28px', border: 'none', background: 'white' }}>
+                <WorkZoneManager />
               </div>
             )}
             
