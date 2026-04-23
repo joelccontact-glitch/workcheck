@@ -17,7 +17,7 @@ interface Profile {
   used_leave: number;
   work_start_time: string;
   work_end_time: string;
-  cached_uid?: string; // 추가: 캐시된 사용자 ID
+  cached_uid?: string;
 }
 
 interface AuthContextType {
@@ -41,7 +41,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const CACHE_KEY = 'workcheck_profile_v2';
+const CACHE_KEY = 'workcheck_profile_v3';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
@@ -52,18 +52,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const isFetching = useRef(false);
+  const loadingStateRef = useRef(true);
+
+  // loading 상태를 추적하는 ref (타임아웃에서 사용)
+  useEffect(() => {
+    loadingStateRef.current = loading;
+  }, [loading]);
 
   const publicPaths = ['/login', '/signup', '/auth/callback'];
   const isPublicPath = publicPaths.includes(pathname);
 
-  // 1. 컴포넌트 마운트 즉시 캐시 확인 (최우선 순위)
+  // 즉시 캐시 로드
   useEffect(() => {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
         setProfile(parsed);
-        // 캐시가 있으면 로딩을 즉시 끝내서 대시보드 구조를 먼저 보여줌
         if (parsed.cached_uid) {
           setLoading(false);
         }
@@ -113,25 +118,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const initAuth = async () => {
-      // getSession을 기다리는 동안 이미 캐시된 profile이 있다면 UI는 떠있음
-      const { data } = await supabase.auth.getSession();
-      const user = data?.session?.user ?? null;
-      setSupabaseUser(user);
-      
-      if (user) {
-        await fetchProfile(user.id, true);
-      } else {
+    // 세션 확인 타임아웃 (모바일/인앱 브라우저 멈춤 방지)
+    const authTimeout = setTimeout(() => {
+      if (loadingStateRef.current) {
+        console.warn('[Auth] Initialization timed out. Forcing UI render.');
         setLoading(false);
-        localStorage.removeItem(CACHE_KEY);
-        if (!isPublicPath) router.replace('/login');
+        if (!supabaseUser && !isPublicPath) {
+          router.replace('/login');
+        }
+      }
+    }, 4000); // 4초 후 강제 해제
+
+    const initAuth = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        const user = data?.session?.user ?? null;
+        setSupabaseUser(user);
+        
+        if (user) {
+          await fetchProfile(user.id, true);
+        } else {
+          setLoading(false);
+          localStorage.removeItem(CACHE_KEY);
+          if (!isPublicPath) router.replace('/login');
+        }
+      } catch (err) {
+        console.error('[Auth] Init error:', err);
+        setLoading(false);
+      } finally {
+        clearTimeout(authTimeout);
       }
     };
 
     initAuth();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event: any, session: any) => {
+      async (event, session) => {
         const user = session?.user ?? null;
         setSupabaseUser(user);
         
@@ -148,6 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => {
+      clearTimeout(authTimeout);
       authListener.subscription.unsubscribe();
     };
   }, [pathname]);
@@ -158,6 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
     setProfile(null);
     setSupabaseUser(null);
+    setLoading(false);
     router.replace('/login');
   };
 
@@ -173,12 +199,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // userData 계산 시 캐시된 정보를 최대한 활용하여 user 데이터가 즉시 존재하게 함
   const userData = useMemo(() => {
     const targetUser = supabaseUser || (profile?.cached_uid ? { id: profile.cached_uid, email: '' } : null);
-    
     if (!targetUser) return null;
-
     return {
       id: targetUser.id,
       email: (targetUser as any).email || '',
