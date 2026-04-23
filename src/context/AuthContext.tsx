@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { useRouter, usePathname } from 'next/navigation';
@@ -17,6 +17,7 @@ interface Profile {
   used_leave: number;
   work_start_time: string;
   work_end_time: string;
+  cached_uid?: string; // 추가: 캐시된 사용자 ID
 }
 
 interface AuthContextType {
@@ -40,7 +41,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const CACHE_KEY = 'workcheck_profile_cache';
+const CACHE_KEY = 'workcheck_profile_v2';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
@@ -55,17 +56,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const publicPaths = ['/login', '/signup', '/auth/callback'];
   const isPublicPath = publicPaths.includes(pathname);
 
-  // 캐시된 프로필 불러오기 (초기 속도 향상)
+  // 1. 컴포넌트 마운트 즉시 캐시 확인 (최우선 순위)
   useEffect(() => {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
         setProfile(parsed);
-        // 캐시가 있으면 일단 로딩을 해제하여 화면을 즉시 보여줌
-        setLoading(false);
+        // 캐시가 있으면 로딩을 즉시 끝내서 대시보드 구조를 먼저 보여줌
+        if (parsed.cached_uid) {
+          setLoading(false);
+        }
       } catch (e) {
-        console.error('Cache parse error', e);
+        console.error('Cache error', e);
       }
     }
   }, []);
@@ -93,7 +96,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           total_leave: data.total_leave || 15,
           used_leave: data.used_leave || 0,
           work_start_time: data.work_start_time || '09:00:00',
-          work_end_time: data.work_end_time || '18:00:00'
+          work_end_time: data.work_end_time || '18:00:00',
+          cached_uid: userId
         };
         setProfile(newProfile);
         localStorage.setItem(CACHE_KEY, JSON.stringify(newProfile));
@@ -110,13 +114,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initAuth = async () => {
+      // getSession을 기다리는 동안 이미 캐시된 profile이 있다면 UI는 떠있음
       const { data } = await supabase.auth.getSession();
       const user = data?.session?.user ?? null;
       setSupabaseUser(user);
       
       if (user) {
-        // 캐시가 있더라도 백그라운드에서 최신 정보를 가져옴
-        await fetchProfile(user.id, !!profile);
+        await fetchProfile(user.id, true);
       } else {
         setLoading(false);
         localStorage.removeItem(CACHE_KEY);
@@ -132,9 +136,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSupabaseUser(user);
         
         if (user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
-          await fetchProfile(user.id, !!profile);
+          await fetchProfile(user.id, true);
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
+          setSupabaseUser(null);
           localStorage.removeItem(CACHE_KEY);
           setLoading(false);
           if (!isPublicPath) router.replace('/login');
@@ -168,17 +173,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const userData = supabaseUser ? {
-    id: supabaseUser.id,
-    email: supabaseUser.email || '',
-    name: profile?.full_name || supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || '사용자',
-    team: profile?.team || '소속 없음',
-    rank: profile?.rank || '직급 없음',
-    total_leave: profile?.total_leave || 15,
-    used_leave: profile?.used_leave || 0,
-    work_start_time: profile?.work_start_time || '09:00:00',
-    work_end_time: profile?.work_end_time || '18:00:00'
-  } : null;
+  // userData 계산 시 캐시된 정보를 최대한 활용하여 user 데이터가 즉시 존재하게 함
+  const userData = useMemo(() => {
+    const targetUser = supabaseUser || (profile?.cached_uid ? { id: profile.cached_uid, email: '' } : null);
+    
+    if (!targetUser) return null;
+
+    return {
+      id: targetUser.id,
+      email: (targetUser as any).email || '',
+      name: profile?.full_name || '사용자',
+      team: profile?.team || '소속 없음',
+      rank: profile?.rank || '직급 없음',
+      total_leave: profile?.total_leave || 15,
+      used_leave: profile?.used_leave || 0,
+      work_start_time: profile?.work_start_time || '09:00:00',
+      work_end_time: profile?.work_end_time || '18:00:00'
+    };
+  }, [supabaseUser, profile]);
 
   return (
     <AuthContext.Provider value={{ 
