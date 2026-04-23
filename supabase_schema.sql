@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS departments (
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   full_name TEXT,
-  role TEXT DEFAULT 'USER' CHECK (role IN ('ADMIN', 'USER')),
+  role TEXT DEFAULT 'USER', -- Removed CHECK constraint to allow multiple roles like 'ADMIN,USER'
   department_id BIGINT REFERENCES departments(id),
   team TEXT DEFAULT 'General',
   rank TEXT,
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS work_zones (
 ALTER TABLE work_zones ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Work zones are viewable by authenticated users" ON work_zones FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Work zones managed by admins" ON work_zones FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role LIKE '%ADMIN%')
 );
 
 -- 4. Work Logs Table
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS work_logs (
 ALTER TABLE work_logs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view their own logs" ON work_logs FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Admins can view all logs" ON work_logs FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role LIKE '%ADMIN%')
 );
 CREATE POLICY "Users can insert their own logs" ON work_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
 
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS leave_requests (
 ALTER TABLE leave_requests ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view their own leave" ON leave_requests FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Admins can view all leave" ON leave_requests FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role LIKE '%ADMIN%')
 );
 CREATE POLICY "Users can insert leave" ON leave_requests FOR INSERT WITH CHECK (auth.uid() = user_id);
 
@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS announcements (
 ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Announcements viewable by everyone" ON announcements FOR SELECT USING (true);
 CREATE POLICY "Announcements managed by admins" ON announcements FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role LIKE '%ADMIN%')
 );
 
 -- 7. Audit Logs Table
