@@ -42,7 +42,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const CACHE_KEY = 'workcheck_profile_v7';
+const CACHE_KEY = 'workcheck_profile_v8';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
@@ -51,41 +51,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true); // 기본값은 항상 로딩 중
+  const [loading, setLoading] = useState(true);
   const isFetching = useRef(false);
+  const isInitialized = useRef(false);
 
   const publicPaths = ['/login', '/signup', '/auth/callback'];
   const isPublicPath = publicPaths.includes(pathname);
 
-  // 1. 초기 인증 체크 (가장 중요)
+  // [속도 최적화] 브라우저에 남은 세션이 있는지 즉시 확인 (네트워크 없이)
   useEffect(() => {
-    const initAuth = async () => {
+    if (isInitialized.current) return;
+    
+    const checkInstantAccess = async () => {
+      // 1. 로컬 스토리지에서 캐시된 프로필 먼저 로드
+      const cached = localStorage.getItem(CACHE_KEY);
+      let preUser = null;
+      
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setProfile(parsed);
+          if (parsed.cached_uid) {
+            preUser = { id: parsed.cached_uid };
+            // 캐시가 있으면 로딩을 미리 풀어서 화면을 즉시 보여줍니다. (속도 개선 핵심)
+            setLoading(false);
+          }
+        } catch (e) { /* ignore */ }
+      }
+
+      // 2. 백그라운드에서 실제 세션 검증 (보안 유지)
       try {
-        // 서버 세션 확인 (이게 끝나야 로딩을 풉니다)
         const { data: { session } } = await supabase.auth.getSession();
         const user = session?.user ?? null;
-        
         setSupabaseUser(user);
 
         if (user) {
-          // 세션이 있으면 프로필을 가져옵니다.
-          await fetchProfile(user.id, false);
+          // 세션이 확인되면 최신 프로필 동기화
+          await fetchProfile(user.id, true);
         } else {
-          // 세션이 없으면 즉시 로딩을 풀고 비로그인 상태로 전환
+          // 세션이 없으면 (로그아웃 됨) 즉시 차단하고 리다이렉트
+          localStorage.removeItem(CACHE_KEY);
+          setProfile(null);
           setLoading(false);
-          if (!isPublicPath) {
-            router.replace('/login');
-          }
+          if (!isPublicPath) router.replace('/login');
         }
       } catch (err) {
-        console.error('[Auth] Init error:', err);
         setLoading(false);
+      } finally {
+        isInitialized.current = true;
       }
     };
 
-    initAuth();
+    checkInstantAccess();
 
-    // 인증 상태 변화 감지
+    // 상태 변화 리스너
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event: any, session: any) => {
         const user = session?.user ?? null;
@@ -96,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
           setSupabaseUser(null);
-          localStorage.clear();
+          localStorage.removeItem(CACHE_KEY);
           setLoading(false);
           if (!isPublicPath) router.replace('/login');
         }
@@ -156,7 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleSignOut = async () => {
     setLoading(true);
-    localStorage.clear();
+    localStorage.removeItem(CACHE_KEY);
     await supabase.auth.signOut();
     setProfile(null);
     setSupabaseUser(null);
@@ -172,16 +191,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (profile) {
       const updated = { ...profile, active_role: newRole };
       setProfile(updated);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
     }
   };
 
   const userData = useMemo(() => {
-    // 세션 정보가 없으면 절대로 사용자 데이터를 반환하지 않음
-    if (!supabaseUser) return null;
+    // 세션이 없거나 초기화되지 않은 경우는 null
+    if (!supabaseUser && isInitialized.current) return null;
+    
+    // 초기화 중이거나 세션이 있는 경우에만 데이터 반환
+    const targetUser = supabaseUser || (profile?.cached_uid ? { id: profile.cached_uid } : null);
+    if (!targetUser) return null;
     
     return {
-      id: supabaseUser.id,
-      email: (supabaseUser as any).email || '',
+      id: targetUser.id,
+      email: (supabaseUser as any)?.email || '',
       name: profile?.full_name || '사용자',
       team: profile?.team || '소속 없음',
       rank: profile?.rank || '직급 없음',
