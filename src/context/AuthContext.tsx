@@ -9,7 +9,7 @@ type Role = 'ADMIN' | 'USER';
 
 interface Profile {
   full_name: string;
-  role: string; // "ADMIN", "USER", 또는 "ADMIN,USER" 형태
+  role: string;
   department_id?: number;
   team: string;
   rank: string;
@@ -18,7 +18,7 @@ interface Profile {
   work_start_time: string;
   work_end_time: string;
   cached_uid?: string;
-  active_role: Role; // 현재 세션에서 사용 중인 역할
+  active_role: Role;
 }
 
 interface AuthContextType {
@@ -42,7 +42,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const CACHE_KEY = 'workcheck_profile_v6';
+const CACHE_KEY = 'workcheck_profile_v7';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
@@ -51,29 +51,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [sessionChecked, setSessionChecked] = useState(false);
+  const [loading, setLoading] = useState(true); // 기본값은 항상 로딩 중
   const isFetching = useRef(false);
-  const loadingStateRef = useRef(true);
-
-  useEffect(() => {
-    loadingStateRef.current = loading;
-  }, [loading]);
 
   const publicPaths = ['/login', '/signup', '/auth/callback'];
   const isPublicPath = publicPaths.includes(pathname);
 
+  // 1. 초기 인증 체크 (가장 중요)
   useEffect(() => {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
+    const initAuth = async () => {
       try {
-        const parsed = JSON.parse(cached);
-        setProfile(parsed);
-      } catch (e) {
-        console.error('Cache error', e);
+        // 서버 세션 확인 (이게 끝나야 로딩을 풉니다)
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user ?? null;
+        
+        setSupabaseUser(user);
+
+        if (user) {
+          // 세션이 있으면 프로필을 가져옵니다.
+          await fetchProfile(user.id, false);
+        } else {
+          // 세션이 없으면 즉시 로딩을 풀고 비로그인 상태로 전환
+          setLoading(false);
+          if (!isPublicPath) {
+            router.replace('/login');
+          }
+        }
+      } catch (err) {
+        console.error('[Auth] Init error:', err);
+        setLoading(false);
       }
-    }
-  }, []);
+    };
+
+    initAuth();
+
+    // 인증 상태 변화 감지
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event: any, session: any) => {
+        const user = session?.user ?? null;
+        setSupabaseUser(user);
+        
+        if (user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+          await fetchProfile(user.id, true);
+        } else if (event === 'SIGNED_OUT') {
+          setProfile(null);
+          setSupabaseUser(null);
+          localStorage.clear();
+          setLoading(false);
+          if (!isPublicPath) router.replace('/login');
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [pathname]);
 
   const fetchProfile = async (userId: string, isBackground = false) => {
     if (isFetching.current) return;
@@ -82,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isBackground) setLoading(true);
 
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
@@ -92,12 +125,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const intentRole = localStorage.getItem('login_intent_role') as Role;
         const dbRoles = (data.role || 'USER').split(',').map((r: string) => r.trim());
         
-        // 실제 권한 목록에 사용자가 선택한 역할이 있는지 확인
         let finalRole: Role = 'USER';
         if (intentRole && dbRoles.includes(intentRole)) {
           finalRole = intentRole;
         } else if (dbRoles.includes('ADMIN')) {
-          finalRole = 'ADMIN'; // 의도가 없으면 관리자 우선
+          finalRole = 'ADMIN';
         }
 
         const newProfile: Profile = {
@@ -115,83 +147,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         setProfile(newProfile);
         localStorage.setItem(CACHE_KEY, JSON.stringify(newProfile));
-        localStorage.removeItem('login_intent_role');
-      } else {
-        if (!isPublicPath) router.replace('/signup');
       }
-    } catch (err) {
-      console.error('[Auth] Fetch error:', err);
     } finally {
       isFetching.current = false;
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    const authTimeout = setTimeout(() => {
-      if (loadingStateRef.current) {
-        setLoading(false);
-        setSessionChecked(true);
-      }
-    }, 4000);
-
-    const initAuth = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        const user = data?.session?.user ?? null;
-        setSupabaseUser(user);
-        setSessionChecked(true);
-        
-        if (user) {
-          await fetchProfile(user.id, true);
-        } else {
-          setLoading(false);
-          localStorage.removeItem(CACHE_KEY);
-          if (!isPublicPath) router.replace('/login');
-        }
-      } catch (err) {
-        setLoading(false);
-        setSessionChecked(true);
-      } finally {
-        clearTimeout(authTimeout);
-      }
-    };
-
-    initAuth();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event: any, session: any) => {
-        const user = session?.user ?? null;
-        setSupabaseUser(user);
-        setSessionChecked(true);
-        
-        if (user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
-          await fetchProfile(user.id, true);
-        } else if (event === 'SIGNED_OUT') {
-          setProfile(null);
-          setSupabaseUser(null);
-          localStorage.clear();
-          setLoading(false);
-          window.location.href = '/login';
-        }
-      }
-    );
-
-    return () => {
-      clearTimeout(authTimeout);
-      authListener.subscription.unsubscribe();
-    };
-  }, [pathname]);
-
   const handleSignOut = async () => {
     setLoading(true);
     localStorage.clear();
-    sessionStorage.clear();
     await supabase.auth.signOut();
     setProfile(null);
     setSupabaseUser(null);
     setLoading(false);
-    window.location.href = '/login';
+    router.replace('/login');
   };
 
   const refreshProfile = async () => {
@@ -202,18 +172,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (profile) {
       const updated = { ...profile, active_role: newRole };
       setProfile(updated);
-      localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
     }
   };
 
   const userData = useMemo(() => {
-    if (sessionChecked && !supabaseUser) return null;
-    const targetUser = supabaseUser || (profile?.cached_uid ? { id: profile.cached_uid, email: '' } : null);
-    if (!targetUser) return null;
-
+    // 세션 정보가 없으면 절대로 사용자 데이터를 반환하지 않음
+    if (!supabaseUser) return null;
+    
     return {
-      id: targetUser.id,
-      email: (targetUser as any).email || '',
+      id: supabaseUser.id,
+      email: (supabaseUser as any).email || '',
       name: profile?.full_name || '사용자',
       team: profile?.team || '소속 없음',
       rank: profile?.rank || '직급 없음',
@@ -222,7 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       work_start_time: profile?.work_start_time || '09:00:00',
       work_end_time: profile?.work_end_time || '18:00:00'
     };
-  }, [supabaseUser, profile, sessionChecked]);
+  }, [supabaseUser, profile]);
 
   return (
     <AuthContext.Provider value={{ 
