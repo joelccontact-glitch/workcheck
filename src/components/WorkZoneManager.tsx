@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { MapPin, Wifi, Globe, Trash2, Plus, Loader2, Check, AlertCircle, Save } from 'lucide-react';
+import { MapPin, Wifi, Globe, Trash2, Plus, Loader2, Check, AlertCircle, Save, X } from 'lucide-react';
 
 export default function WorkZoneManager() {
   const supabase = createClient();
