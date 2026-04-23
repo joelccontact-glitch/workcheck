@@ -16,7 +16,7 @@ export default function TeamList() {
     const { data } = await supabase.from('profiles').select('*').order('full_name');
     if (data) {
       // 초기 역할 데이터를 배열 형태로 가공하여 상태 관리
-      setTeams(data.map(t => ({
+      setTeams(data.map((t: any) => ({
         ...t,
         roleList: t.role ? t.role.split(',').map((r: string) => r.trim()).filter(Boolean) : ['USER']
       })));
@@ -30,7 +30,7 @@ export default function TeamList() {
 
   // 로컬 상태만 변경 (체크박스 클릭 시)
   const handleCheckRole = (id: string, roleToToggle: string) => {
-    setTeams(prev => prev.map(t => {
+    setTeams(prev => prev.map((t: any) => {
       if (t.id === id) {
         const current = [...t.roleList];
         const next = current.includes(roleToToggle)
