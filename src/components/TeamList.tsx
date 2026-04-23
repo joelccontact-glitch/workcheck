@@ -137,7 +137,7 @@ const badgeStyle = (type: string) => ({
   gap: '3px',
   backgroundColor: type === 'ADMIN' ? 'hsl(var(--primary)/0.1)' : 'hsl(var(--success)/0.1)',
   color: type === 'ADMIN' ? 'hsl(var(--primary))' : 'hsl(var(--success))',
-  border: `1px solid ${type === 'ADMIN' ? 'hsl(var(--primary)/0.2)' : 'hsl(var(--success)/0.2)}`
+  border: `1px solid ${type === 'ADMIN' ? 'hsl(var(--primary)/0.2)' : 'hsl(var(--success)/0.2)'}`
 });
 
 const checkboxLabelStyle: React.CSSProperties = {
