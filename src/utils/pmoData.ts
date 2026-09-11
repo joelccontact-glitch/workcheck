@@ -1,6 +1,18 @@
 // ====================================================================
-// 다음정보시스템즈 PMO 구축 및 운영체계 (DaumIS PMO Portal) Data Store & Calculation Engine
+// 다음정보시스템즈 PMO 구축 및 운영체계 (DaumIS PMO Portal) Data Store & Firebase Firestore Service
 // ====================================================================
+
+import { db } from './firebase';
+import { 
+  collection, 
+  getDocs, 
+  doc, 
+  setDoc, 
+  addDoc, 
+  updateDoc, 
+  query, 
+  orderBy 
+} from 'firebase/firestore';
 
 export interface Project {
   id: string;
@@ -96,7 +108,7 @@ export const PM_STANDARD_16_ITEMS: Omit<PMDeliverable, 'status'>[] = [
   { no: 16, name: 'Lessons Learned', timing: '종료', owner: 'PM/PMO' }
 ];
 
-// 초기 프로젝트 시드 데이터 (경영진 보고서 예시 기준)
+// 초기 프로젝트 시드 데이터
 export const INITIAL_PROJECTS: Project[] = [
   {
     id: '1',
@@ -275,5 +287,61 @@ export function calculateHealthScore(scores: {
     return { totalScore, status: 'Yellow' };
   } else {
     return { totalScore, status: 'Red' };
+  }
+}
+
+// ====================================================================
+// Firebase Firestore Integration Helper Methods (With Offline Fallback)
+// ====================================================================
+
+export async function fetchProjectsFromFirestore(): Promise<Project[]> {
+  try {
+    const projectsCol = collection(db, 'projects');
+    const projectSnapshot = await getDocs(projectsCol);
+    if (!projectSnapshot.empty) {
+      const list: Project[] = [];
+      projectSnapshot.forEach(docSnap => {
+        list.push({ id: docSnap.id, ...docSnap.data() } as Project);
+      });
+      return list;
+    }
+  } catch (err) {
+    console.warn('Firestore fetch notice, fallback to initial projects:', err);
+  }
+  return INITIAL_PROJECTS;
+}
+
+export async function saveProjectToFirestore(project: Project): Promise<void> {
+  try {
+    const projectRef = doc(db, 'projects', project.id);
+    await setDoc(projectRef, project);
+  } catch (err) {
+    console.warn('Firestore save notice:', err);
+  }
+}
+
+export async function fetchIssuesFromFirestore(): Promise<IssueItem[]> {
+  try {
+    const issuesCol = collection(db, 'issues');
+    const snapshot = await getDocs(issuesCol);
+    if (!snapshot.empty) {
+      const list: IssueItem[] = [];
+      snapshot.forEach(docSnap => {
+        list.push({ id: docSnap.id, ...docSnap.data() } as IssueItem);
+      });
+      return list;
+    }
+  } catch (err) {
+    console.warn('Firestore issues fetch notice:', err);
+  }
+  return INITIAL_ISSUES;
+}
+
+export async function saveIssueToFirestore(issue: IssueItem): Promise<void> {
+  try {
+    const issueRef = doc(db, 'issues', issue.id);
+    await setDoc(issueRef, issue);
+  } catch (err) {
+    console.warn('Firestore issue save notice:', err);
   }
 }
