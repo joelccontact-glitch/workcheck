@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSessionVerified(true);
     }, 5000);
 
-    const init = async () => {
+    const checkInitialSession = async () => {
       try {
         // [캐시 로드] 성능을 위해 먼저 로컬 데이터를 로드
         const cached = localStorage.getItem(CACHE_KEY);
@@ -77,12 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } catch (e) { /* ignore */ }
         }
 
-        // [서버 검증] 실제 세션 확인
         const { data: { session } } = await supabase.auth.getSession();
         const user = session?.user ?? null;
         
         setSupabaseUser(user);
-        setSessionVerified(true);
 
         if (user) {
           await fetchProfile(user.id, true);
@@ -94,11 +92,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('[Auth] Init failed', err);
         setLoading(false);
       } finally {
+        setSessionVerified(true);
         clearTimeout(failsafe);
       }
     };
 
-    init();
+    checkInitialSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event: any, session: any) => {
@@ -111,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
           setSupabaseUser(null);
-          localStorage.removeItem(CACHE_KEY);
+          localStorage.clear();
           setLoading(false);
           if (!isPublicPath) router.replace('/login');
         }

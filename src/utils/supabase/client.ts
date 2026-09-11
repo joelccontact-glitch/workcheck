@@ -1,25 +1,27 @@
 import { createBrowserClient } from '@supabase/ssr'
 
+let clientInstance: any = null;
+
 export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
     if (typeof window !== 'undefined') {
-      console.error('Supabase environment variables are missing! Check: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY');
+      console.error('Supabase environment variables are missing!');
     }
-    // Return a dummy client that won't crash on property access
     return {
       auth: {
         getSession: async () => ({ data: { session: null }, error: null }),
-        getUser: async () => ({ data: { user: null }, error: null }),
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-        signOut: async () => ({ error: null }),
-        signInWithPassword: async () => ({ data: { user: null, session: null }, error: { message: 'Environment variables missing' } }),
-        signUp: async () => ({ data: { user: null, session: null }, error: { message: 'Environment variables missing' } }),
       }
     } as any; 
   }
 
-  return createBrowserClient(url, anonKey)
+  // 이미 생성된 인스턴스가 있으면 재사용 (싱글톤)
+  if (!clientInstance) {
+    clientInstance = createBrowserClient(url, anonKey);
+  }
+
+  return clientInstance;
 }

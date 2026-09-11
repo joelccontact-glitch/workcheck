@@ -1,197 +1,386 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { Home, Calendar, Send, PieChart, Bell, User, LayoutDashboard, Users, MapPin, BarChart3, Settings, LogOut, ChevronRight, Megaphone, LogIn, ShieldCheck } from 'lucide-react';
-import AttendanceCard from '@/components/AttendanceCard';
-import HistoryLog from '@/components/HistoryLog';
-import TeamList from '@/components/TeamList';
-import LeaveRequests from '@/components/LeaveRequests';
-import AdminDashboardStats from '@/components/AdminDashboardStats';
-import AttendanceCalendar from '@/components/AttendanceCalendar';
-import RequestCenter from '@/components/RequestCenter';
-import OvertimeSummary from '@/components/OvertimeSummary';
-import MyPage from '@/components/MyPage';
-import AdminWorkplace from '@/components/AdminWorkplace';
-import WorkZoneManager from '@/components/WorkZoneManager';
+import React, { useState } from 'react';
+import Sidebar from '@/components/Sidebar';
+import { 
+  INITIAL_PROJECTS, 
+  INITIAL_ISSUES, 
+  PM_STANDARD_16_ITEMS, 
+  Project 
+} from '@/utils/pmoData';
+import { 
+  Building2, 
+  AlertTriangle, 
+  TrendingUp, 
+  CheckCircle2, 
+  Clock, 
+  FileText, 
+  ChevronRight, 
+  ShieldAlert, 
+  Layers, 
+  DollarSign, 
+  ArrowUpRight,
+  Sparkles,
+  Users,
+  Search,
+  Filter,
+  Activity,
+  FolderKanban
+} from 'lucide-react';
+import Link from 'next/link';
 
-export default function App() {
-  const { user, role, loading, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState('home');
+export default function PortfolioDashboard() {
+  const [projects] = useState<Project[]>(INITIAL_PROJECTS);
+  const [issues] = useState(INITIAL_ISSUES);
 
-  useEffect(() => {
-    // 권한에 따른 초기 탭 설정
-    if (role === 'ADMIN') {
-      setActiveTab('home');
-    } else {
-      setActiveTab('home');
-    }
-  }, [role]);
-
-  if (loading) {
-    return (
-      <div className="flex-center" style={{ minHeight: '100vh', width: '100%', backgroundColor: 'hsl(var(--background))' }}>
-        <div className="animate-spin" style={{ width: 40, height: 40, border: '4px solid hsl(var(--primary))', borderTopColor: 'transparent', borderRadius: '50%' }} />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="flex-center" style={{ minHeight: '100vh', flexDirection: 'column', gap: '2rem', backgroundColor: 'hsl(var(--muted)/0.3)' }}>
-        <div style={{ width: 80, height: 80, borderRadius: '20px', backgroundColor: 'hsl(var(--primary))', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '2.5rem' }}>W</div>
-        <button onClick={() => window.location.href = '/login'} className="btn btn-primary" style={{ height: '3.5rem', padding: '0 2rem', borderRadius: '16px' }}>
-          <LogIn size={20} /> 로그인 페이지로 이동
-        </button>
-      </div>
-    );
-  }
-
-  const isAdmin = role === 'ADMIN';
-
-  // 1. 근무지 설정 메뉴 재배치 및 권한별 메뉴 정의
-  const menus = isAdmin ? [
-    { id: 'home', icon: <LayoutDashboard size={20} />, label: '관리 대시보드' },
-    { id: 'team', icon: <Users size={20} />, label: '전체 직원 현황' },
-    { id: 'approvals', icon: <Send size={20} />, label: '결재 승인' },
-    { id: 'workplace_admin', icon: <MapPin size={20} />, label: '근무지 통합 관리' }, // 관리자용 관리 기능
-    { id: 'reports', icon: <BarChart3 size={20} />, label: '통계 리포트' },
-  ] : [
-    { id: 'home', icon: <Home size={20} />, label: '나의 홈' },
-    { id: 'history', icon: <Calendar size={20} />, label: '근태 이력' },
-    { id: 'request', icon: <Send size={20} />, label: '휴가/연장 신청' },
-    { id: 'workplace_user', icon: <MapPin size={20} />, label: '나의 근무지 설정' }, // 사용자용 설정 기능
-    { id: 'mypage', icon: <User size={20} />, label: '마이페이지' },
-  ];
+  // Financial & Stats calculations
+  const totalAmount = projects.reduce((acc, p) => acc + p.contractAmount, 0);
+  const totalProfit = projects.reduce((acc, p) => acc + p.expectedProfit, 0);
+  const redProjectsCount = projects.filter(p => p.healthStatus === 'Red').length;
+  const yellowProjectsCount = projects.filter(p => p.healthStatus === 'Yellow').length;
+  const greenProjectsCount = projects.filter(p => p.healthStatus === 'Green').length;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'hsl(var(--muted)/0.3)', display: 'flex', flexDirection: 'column' }}>
-      {/* Header (RoleSwitcher 제거됨) */}
-      <header style={{ 
-        height: '72px', backgroundColor: 'rgba(255, 255, 255, 0.8)', 
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid hsl(var(--border))', 
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 1.5rem', position: 'sticky', top: 0, zIndex: 100
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ width: 34, height: 34, borderRadius: '8px', backgroundColor: 'hsl(var(--primary))', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>W</div>
-          <span style={{ fontWeight: 800, fontSize: '1.25rem', color: 'hsl(var(--primary))' }} className="md-block">WorkCheck</span>
-          {isAdmin && <span style={{ marginLeft: '0.5rem', padding: '0.2rem 0.6rem', borderRadius: '6px', backgroundColor: 'hsl(var(--destructive)/0.1)', color: 'hsl(var(--destructive))', fontSize: '0.7rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}><ShieldCheck size={12} /> ADMIN</span>}
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ textAlign: 'right' }} className="md-block">
-            <div style={{ fontSize: '0.875rem', fontWeight: 700 }}>{user.name}</div>
-            <div style={{ fontSize: '0.7rem', color: 'hsl(var(--muted-foreground))' }}>{user.rank} / {user.team}</div>
-          </div>
-          <div style={{ height: '32px', width: '1px', backgroundColor: 'hsl(var(--border))' }} />
-          {/* 로그아웃 기능 강화 */}
-          <button 
-            onClick={() => {
-              if (confirm('로그아웃 하시겠습니까?')) signOut();
-            }}
-            className="btn btn-ghost" 
-            style={{ padding: '0.6rem', color: 'hsl(var(--muted-foreground))' }}
-            title="로그아웃"
-          >
-            <LogOut size={22} />
-          </button>
-        </div>
-      </header>
+    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans">
+      <Sidebar />
 
-      <div style={{ flex: 1, display: 'flex', width: '100%', maxWidth: '1440px', margin: '0 auto' }}>
-        <nav style={{ width: '260px', padding: '2rem 1.25rem', display: 'none', flexDirection: 'column', gap: '0.4rem', position: 'sticky', top: '72px', height: 'calc(100vh - 72px)' }} className="md-flex">
-          {menus.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.875rem',
-                padding: '0.875rem 1.125rem', borderRadius: '14px', border: 'none',
-                background: activeTab === item.id ? 'hsl(var(--primary))' : 'transparent',
-                color: activeTab === item.id ? 'white' : 'hsl(var(--muted-foreground))',
-                fontWeight: activeTab === item.id ? 700 : 500,
-                cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s ease'
-              }}
+      <main className="flex-1 lg:ml-72 p-4 md:p-8 space-y-8 max-w-[1600px] mx-auto">
+        {/* Top Header */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">
+              <Sparkles size={14} /> 경영진 보고용 (Executive Overview)
+            </div>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+              PMO 포트폴리오 대시보드
+            </h1>
+            <p className="text-sm text-slate-400 mt-1">
+              전사 프로젝트 위험·수익성·품질 조기 가시화 및 선제적 의사결정 체계
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/weekly-check"
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all shadow-lg shadow-blue-600/30 flex items-center gap-2"
             >
-              {item.icon} {item.label}
-              {activeTab === item.id && <ChevronRight size={14} style={{ marginLeft: 'auto' }} />}
-            </button>
-          ))}
-        </nav>
-
-        <main style={{ flex: 1, minWidth: 0, padding: '1.5rem 1rem 8rem' }} className="md-padding-large">
-          <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-            {activeTab === 'home' && (
-              <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <section style={{ marginBottom: '0.5rem' }}>
-                  <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', letterSpacing: '-0.03em' }}>
-                    {isAdmin ? '관리자 대시보드' : '나의 업무 현황'}
-                  </h1>
-                  <p style={{ color: 'hsl(var(--muted-foreground))' }}>
-                    {isAdmin ? '전체 직원의 근태 현황을 한눈에 관리합니다.' : `오늘도 활기찬 하루 되세요, ${user.name}님!`}
-                  </p>
-                </section>
-                
-                {isAdmin && <AdminDashboardStats />}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
-                   {!isAdmin && <AttendanceCard />}
-                   {!isAdmin ? <HistoryLog /> : <TeamList />}
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'history' && !isAdmin && <AttendanceCalendar />}
-            {activeTab === 'request' && !isAdmin && <RequestCenter />}
-            {activeTab === 'workplace_user' && !isAdmin && <AdminWorkplace />} {/* 사용자용 근무지 설정 (임시연결) */}
-            {activeTab === 'mypage' && !isAdmin && <MyPage />}
-            
-            {activeTab === 'approvals' && isAdmin && <LeaveRequests />}
-            {activeTab === 'team' && isAdmin && <TeamList />}
-            {activeTab === 'workplace_admin' && isAdmin && (
-              <div className="card animate-in shadow-xl" style={{ padding: '2rem', borderRadius: '28px', border: 'none', background: 'white' }}>
-                <WorkZoneManager />
-              </div>
-            )}
-            
-            {activeTab === 'reports' && isAdmin && (
-              <div className="flex-center card" style={{ height: '300px' }}>통계 리포트 기능 준비 중</div>
-            )}
+              <Activity size={16} /> 주간 점검표 작성
+            </Link>
+            <Link
+              href="/gate-checks"
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition-all flex items-center gap-2"
+            >
+              <Layers size={16} /> Gate Review 현황
+            </Link>
           </div>
-        </main>
-      </div>
+        </header>
 
-      {/* Mobile Bottom Nav */}
-      <nav style={{ 
-        position: 'fixed', bottom: '1rem', left: '1rem', right: '1rem', height: '68px',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)',
-        borderRadius: '20px', border: '1px solid hsl(var(--border))',
-        display: 'flex', justifyContent: 'space-around', alignItems: 'center', zIndex: 100,
-        boxShadow: '0 10px 30px -10px rgba(0,0,0,0.2)'
-      }} className="md-hidden">
-        {menus.slice(0, 5).map(item => (
-          <button key={item.id} onClick={() => setActiveTab(item.id)} style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-            border: 'none', background: 'none', color: activeTab === item.id ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
-            cursor: 'pointer', flex: 1
-          }}>
-            {React.cloneElement(item.icon as any, { size: 20 })}
-            <span style={{ fontSize: '0.6rem', fontWeight: activeTab === item.id ? 700 : 500 }}>{item.label}</span>
-          </button>
-        ))}
-      </nav>
+        {/* Core Vision & Proposal Banner */}
+        <div className="p-6 rounded-2xl bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 border border-blue-800/40 shadow-xl relative overflow-hidden">
+          <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none text-blue-400">
+            <Building2 size={240} />
+          </div>
+          <div className="relative z-10 space-y-2">
+            <span className="px-3 py-1 rounded-full bg-blue-900/60 text-blue-300 border border-blue-700/50 text-xs font-bold tracking-wide">
+              PMO 핵심 제안 (Core Proposition)
+            </span>
+            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+              &quot;잘하는 PM의 경험&quot;을 &quot;누구나 실행할 수 있는 회사의 표준&quot;으로 전환
+            </h2>
+            <p className="text-sm text-slate-300/90 max-w-3xl leading-relaxed">
+              개인 경험 의존 및 문제 발생 후 사후 개입 방식을 탈피하고, <strong className="text-blue-400 font-semibold">16종 PM Standard</strong>, <strong className="text-blue-400 font-semibold">Health Score 조기경보</strong>, <strong className="text-blue-400 font-semibold">Gate Review</strong> 체계를 연결하여 프로젝트 손익 및 리스크를 조기 회복합니다.
+            </p>
+          </div>
+        </div>
 
-      <style jsx global>{`
-        .md-flex { display: none; }
-        .md-block { display: none; }
-        @media (min-width: 1024px) {
-          .md-flex { display: flex; }
-          .md-block { display: block; }
-          .md-hidden { display: none; }
-          .md-padding-large { padding: 3rem 2rem !important; }
-        }
-      `}</style>
+        {/* Executive Key Metrics (KPIs) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="pmo-card space-y-3">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider">
+              <span>전사 프로젝트 계약 총액</span>
+              <DollarSign size={18} className="text-blue-400" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-white">{totalAmount.toFixed(1)}</span>
+              <span className="text-sm font-semibold text-slate-400">억 원 (4개 프로젝트)</span>
+            </div>
+            <div className="text-xs text-blue-400/90 flex items-center gap-1 font-medium">
+              <TrendingUp size={13} /> 전사 목표 대비 100% 정상 가동
+            </div>
+          </div>
+
+          <div className="pmo-card space-y-3">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider">
+              <span>전사 예상 손익 (Profitability)</span>
+              <TrendingUp size={18} className={totalProfit >= 0 ? "text-emerald-400" : "text-rose-400"} />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className={`text-3xl font-black ${totalProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {totalProfit > 0 ? `+${totalProfit.toFixed(1)}` : totalProfit.toFixed(1)}
+              </span>
+              <span className="text-sm font-semibold text-slate-400">억 원</span>
+            </div>
+            <div className="text-xs text-slate-400 font-medium">
+              C 프로젝트(-0.7억) 조기 회복 조치 필요
+            </div>
+          </div>
+
+          <div className="pmo-card space-y-3 border-rose-900/40 bg-rose-950/10">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider">
+              <span>위험 프로젝트 (Red Flag)</span>
+              <AlertTriangle size={18} className="text-rose-400 animate-pulse" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-rose-400">{redProjectsCount}</span>
+              <span className="text-sm font-semibold text-slate-400">건 (경영진 선제 개입)</span>
+            </div>
+            <div className="text-xs text-rose-400/90 flex items-center gap-1 font-bold">
+              <ShieldAlert size={13} /> C 프로젝트 Recovery Plan 회의 필요
+            </div>
+          </div>
+
+          <div className="pmo-card space-y-3">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider">
+              <span>Health Score 분포</span>
+              <Activity size={18} className="text-indigo-400" />
+            </div>
+            <div className="flex items-center gap-2 font-bold text-sm">
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-800/60">
+                Green {greenProjectsCount}
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-amber-950 text-amber-400 border border-amber-800/60">
+                Yellow {yellowProjectsCount}
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-rose-950 text-rose-400 border border-rose-800/60">
+                Red {redProjectsCount}
+              </span>
+            </div>
+            <div className="text-xs text-slate-400">
+              전체 평균 Health Score: <strong className="text-slate-200">79.3점</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Grid: Left Portfolio Table / Right Critical Escalations */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column: Monthly Portfolio Status Table (PDF Page 7 Format) */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="pmo-card space-y-5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <FolderKanban className="text-blue-400" size={20} />
+                    월간 Portfolio 현황보고 (경영진 관점)
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    보고서 부록 B 1페이지 월간 Dashboard 양식 준수
+                  </p>
+                </div>
+                <Link
+                  href="/projects"
+                  className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                >
+                  전체 프로젝트 상세보기 <ChevronRight size={14} />
+                </Link>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-xs font-bold text-slate-400 uppercase bg-slate-900/60">
+                      <th className="py-3 px-3">프로젝트명</th>
+                      <th className="py-3 px-3">계약액</th>
+                      <th className="py-3 px-3">진척률</th>
+                      <th className="py-3 px-3">Health</th>
+                      <th className="py-3 px-3">예상손익</th>
+                      <th className="py-3 px-3">핵심 Risk</th>
+                      <th className="py-3 px-3">경영진 요청사항</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60">
+                    {projects.map((p) => (
+                      <tr key={p.id} className="hover:bg-slate-800/30 transition-colors">
+                        <td className="py-3.5 px-3 font-bold text-white">
+                          <Link href={`/projects/${p.id}`} className="hover:text-blue-400 transition-colors">
+                            {p.name}
+                          </Link>
+                          <div className="text-[11px] text-slate-400 font-normal">{p.clientName} | PM: {p.pmName}</div>
+                        </td>
+                        <td className="py-3.5 px-3 font-semibold text-slate-200">{p.contractAmount.toFixed(1)}억</td>
+                        <td className="py-3.5 px-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-2 rounded-full bg-slate-800 overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full ${
+                                  p.progressPct > 60 ? 'bg-blue-500' : 'bg-indigo-500'
+                                }`} 
+                                style={{ width: `${p.progressPct}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-bold text-slate-300">{p.progressPct}%</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center gap-1 ${
+                            p.healthStatus === 'Green'
+                              ? 'bg-emerald-950 text-emerald-400 border-emerald-800/80'
+                              : p.healthStatus === 'Yellow'
+                              ? 'bg-amber-950 text-amber-400 border-amber-800/80'
+                              : 'bg-rose-950 text-rose-400 border-rose-800/80 animate-pulse'
+                          }`}>
+                            <span className={`w-2 h-2 rounded-full ${
+                              p.healthStatus === 'Green' ? 'bg-emerald-400' : p.healthStatus === 'Yellow' ? 'bg-amber-400' : 'bg-rose-400'
+                            }`} />
+                            {p.healthStatus} ({p.healthScore}점)
+                          </span>
+                        </td>
+                        <td className={`py-3.5 px-3 font-bold ${
+                          p.expectedProfit > 0 ? 'text-emerald-400' : p.expectedProfit < 0 ? 'text-rose-400' : 'text-slate-300'
+                        }`}>
+                          {p.expectedProfit > 0 ? `+${p.expectedProfit.toFixed(1)}억` : `${p.expectedProfit.toFixed(1)}억`}
+                        </td>
+                        <td className="py-3.5 px-3 text-xs text-slate-300 max-w-[140px] truncate" title={p.keyRisk}>
+                          {p.keyRisk}
+                        </td>
+                        <td className="py-3.5 px-3">
+                          {p.executiveActionNeeded !== '-' ? (
+                            <span className="px-2.5 py-1 rounded-lg bg-rose-950/80 text-rose-300 border border-rose-800/70 text-xs font-semibold inline-flex items-center gap-1">
+                              <AlertTriangle size={12} /> {p.executiveActionNeeded}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-500">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* PM Standard 16 Deliverables Status Overview */}
+            <div className="pmo-card space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <FileText className="text-indigo-400" size={20} />
+                    PM Standard 최소 산출물 16종 이행 체계
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    프로젝트 착수부터 종료까지 최소 필수 산출물 준수 현황
+                  </p>
+                </div>
+                <Link href="/deliverables" className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                  16종 산출물 등록 <ChevronRight size={14} />
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {PM_STANDARD_16_ITEMS.slice(0, 8).map((item) => (
+                  <div key={item.no} className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs space-y-1">
+                    <div className="flex items-center justify-between text-slate-400 font-semibold">
+                      <span>No.{item.no}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-blue-400">{item.timing}</span>
+                    </div>
+                    <div className="font-bold text-slate-200 truncate" title={item.name}>{item.name}</div>
+                    <div className="text-[11px] text-slate-400">Owner: {item.owner}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Red Flag Escalations & Executive Decision Required */}
+          <div className="space-y-6">
+            {/* Escalation Center */}
+            <div className="pmo-card space-y-4 border-rose-900/40 bg-slate-900/90">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <ShieldAlert className="text-rose-400" size={20} />
+                  Red Flag & Escalation 안건
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-rose-950 text-rose-400 border border-rose-800/80 text-[10px] font-extrabold">
+                  경영진 승인 대기
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {issues.map((issue) => (
+                  <div 
+                    key={issue.id} 
+                    className={`p-4 rounded-xl border text-xs space-y-2 ${
+                      issue.severity === 'Red'
+                        ? 'bg-rose-950/20 border-rose-800/50'
+                        : 'bg-amber-950/20 border-amber-800/50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-300">{issue.projectCode}</span>
+                      <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                        issue.severity === 'Red' ? 'bg-rose-900 text-rose-300' : 'bg-amber-900 text-amber-300'
+                      }`}>
+                        {issue.type} ({issue.severity})
+                      </span>
+                    </div>
+                    <div className="font-bold text-slate-100 text-sm leading-snug">{issue.title}</div>
+                    <div className="text-slate-300 bg-slate-950/60 p-2 rounded-lg border border-slate-800/50">
+                      <strong className="text-rose-400">영향:</strong> {issue.impact}
+                    </div>
+                    <div className="text-slate-400">
+                      <strong>대응방안:</strong> {issue.countermeasure}
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                      <span>담당: {issue.assignee}</span>
+                      <span>기한: {issue.dueDate}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Link
+                href="/issues"
+                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition-all flex items-center justify-center gap-1"
+              >
+                Risk / Issue 대장 전체보기 <ChevronRight size={14} />
+              </Link>
+            </div>
+
+            {/* Quick Gate Check Status */}
+            <div className="pmo-card space-y-4">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Layers className="text-blue-400" size={18} />
+                단계별 Gate Review 현황 (G1~G6)
+              </h3>
+              
+              <div className="space-y-2.5 text-xs">
+                {[
+                  { gate: 'G1 착수 Gate', code: 'G1', status: 'PASS', date: '2026-05-01' },
+                  { gate: 'G2 요구사항 Gate', code: 'G2', status: 'HOLD', date: '2026-09-15', alert: true },
+                  { gate: 'G3 설계 Gate', code: 'G3', status: 'PASS', date: '2026-08-10' },
+                  { gate: 'G4 개발 Gate', code: 'G4', status: 'CONDITIONAL_PASS', date: '2026-09-30' },
+                ].map((g, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <div>
+                      <div className="font-bold text-slate-200">{g.gate}</div>
+                      <div className="text-[11px] text-slate-400">심사 예정/완료: {g.date}</div>
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-lg font-bold text-[11px] ${
+                      g.status === 'PASS' 
+                        ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' 
+                        : g.status === 'HOLD'
+                        ? 'bg-rose-950 text-rose-400 border border-rose-800 animate-pulse'
+                        : 'bg-amber-950 text-amber-400 border border-amber-800'
+                    }`}>
+                      {g.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

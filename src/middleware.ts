@@ -35,7 +35,20 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data } = await supabase.auth.getUser()
+  // Wrap getUser call in a timeout (2.5s) to prevent Vercel middleware invocation timeout (504)
+  const getUserWithTimeout = async () => {
+    try {
+      const timeoutPromise = new Promise<{ data: { user: null } }>((resolve) =>
+        setTimeout(() => resolve({ data: { user: null } }), 2500)
+      )
+      const userPromise = supabase.auth.getUser()
+      return await Promise.race([userPromise, timeoutPromise])
+    } catch {
+      return { data: { user: null } }
+    }
+  }
+
+  const { data } = await getUserWithTimeout()
   const user = data?.user
 
   // Protect all routes except login, signup, and auth callback

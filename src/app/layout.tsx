@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
-  title: "WorkCheck | 근태관리의 새로운 기준",
-  description: "위치 기반 출퇴근 및 연차 관리 비대면 인사 관리 솔루션",
+  title: "다음정보시스템즈 PMO 운영체계 포털 | DaumIS PMO Portal",
+  description: "개인 경험 중심에서 조직 표준 기반 프로젝트 경영체계 전환 및 포트폴리오 가시화 솔루션",
 };
 
 export default function RootLayout({
@@ -13,14 +12,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
-      <head>
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossOrigin="" />
-      </head>
-      <body>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+    <html lang="ko" className="dark">
+      <body className="bg-slate-950 text-slate-100 antialiased selection:bg-blue-500 selection:text-white min-h-screen">
+        {children}
       </body>
     </html>
   );
