@@ -296,7 +296,7 @@ export function calculateHealthScore(scores: {
 
 export async function fetchProjectsFromFirestore(): Promise<Project[]> {
   try {
-    const projectsCol = collection(db, 'projects');
+    const projectsCol = collection(db, 'pmo_projects');
     const projectSnapshot = await getDocs(projectsCol);
     if (!projectSnapshot.empty) {
       const list: Project[] = [];
@@ -313,7 +313,7 @@ export async function fetchProjectsFromFirestore(): Promise<Project[]> {
 
 export async function saveProjectToFirestore(project: Project): Promise<void> {
   try {
-    const projectRef = doc(db, 'projects', project.id);
+    const projectRef = doc(db, 'pmo_projects', project.id);
     await setDoc(projectRef, project);
   } catch (err) {
     console.warn('Firestore save notice:', err);
@@ -322,7 +322,7 @@ export async function saveProjectToFirestore(project: Project): Promise<void> {
 
 export async function fetchIssuesFromFirestore(): Promise<IssueItem[]> {
   try {
-    const issuesCol = collection(db, 'issues');
+    const issuesCol = collection(db, 'pmo_issues');
     const snapshot = await getDocs(issuesCol);
     if (!snapshot.empty) {
       const list: IssueItem[] = [];
@@ -339,7 +339,7 @@ export async function fetchIssuesFromFirestore(): Promise<IssueItem[]> {
 
 export async function saveIssueToFirestore(issue: IssueItem): Promise<void> {
   try {
-    const issueRef = doc(db, 'issues', issue.id);
+    const issueRef = doc(db, 'pmo_issues', issue.id);
     await setDoc(issueRef, issue);
   } catch (err) {
     console.warn('Firestore issue save notice:', err);
