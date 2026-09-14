@@ -60,7 +60,7 @@ export default function DeliverablesPage() {
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-1">
               {currentRole === 'EXECUTIVE' && (
                 <span className="px-2.5 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-800/60 flex items-center gap-1">
-                  <Crown size={13} /> 👑 임원 최종 승인 & 검토 콘솔
+                  <Crown size={13} /> 👑 경영진 최종 승인 & 검토 콘솔
                 </span>
               )}
               {currentRole === 'PM' && (
@@ -79,7 +79,7 @@ export default function DeliverablesPage() {
               PM Standard 최소 산출물 16종 관리 체계
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              {currentRole === 'EXECUTIVE' ? '임원 전용: 프로젝트 산출물 최종 결재 승인 및 서식 품질 점검 보고' :
+              {currentRole === 'EXECUTIVE' ? '경영진 전용: 프로젝트 산출물 최종 결재 승인 및 서식 품질 점검 보고' :
                currentRole === 'PM' ? 'PM 전용: 16종 표준 산출물 양식 다운로드, 작성 및 검토 승인 요청 (Step 05)' :
                '관리자 전용: 전사 16종 표준 서식 마스터 템플릿 제공 및 이행 현황 관리'}
             </p>

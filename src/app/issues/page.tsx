@@ -106,7 +106,7 @@ export default function IssuesPage() {
               Risk / Issue / Escalation 통합 대장
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              {currentRole === 'EXECUTIVE' ? '임원 전용: Red/Yellow 위험 프로젝트 선제 개입 및 경영진 의사결정 회의 조치' :
+              {currentRole === 'EXECUTIVE' ? '경영진 전용: Red/Yellow 위험 프로젝트 선제 개입 및 경영진 의사결정 회의 조치' :
                currentRole === 'PM' ? 'PM 전용: 프로젝트 위험 및 이슈 발생 즉시 등록 후 회복계획 작성 (Step 06)' :
                '관리자 전용: Escalation 3단계 등급 매트릭스 및 전사 경보 기준 관리'}
             </p>

@@ -42,7 +42,7 @@ export default function LoginPage() {
             다음정보시스템즈 <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-slate-100 bg-clip-text text-transparent">PMO 운영체계 포털</span>
           </h1>
           <p className="text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
-            사용자 그룹별(임원, 프로젝트 PM, 사이트 관리자) 역할에 맞는 독립 계정으로 접속하세요.
+            사용자 그룹별(경영진, 프로젝트 PM, 사이트 관리자) 역할에 맞는 독립 계정으로 접속하세요.
           </p>
         </div>
 
@@ -59,7 +59,7 @@ export default function LoginPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="px-3 py-1 rounded-full bg-amber-950 text-amber-300 border border-amber-800/80 text-xs font-bold flex items-center gap-1">
-                    <Crown size={14} /> 👑 임원 (보고 받는 자)
+                    <Crown size={14} /> 👑 경영진 (보고 받는 자)
                   </span>
                   <span className="text-[10px] text-slate-500 font-mono">ID: kim@daumis.co.kr</span>
                 </div>
@@ -78,7 +78,7 @@ export default function LoginPage() {
                 onClick={() => loginAsPreset('EXECUTIVE')}
                 className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition-all shadow-lg shadow-amber-600/25 flex items-center justify-center gap-2"
               >
-                <span>👑 임원 계정으로 로그인</span>
+                <span>👑 경영진 계정으로 로그인</span>
                 <ArrowRight size={14} />
               </button>
             </div>

@@ -46,7 +46,7 @@ export default function Sidebar() {
 
   const currentRole: Role = role === 'USER' ? 'PM' : role;
 
-  // 1. 임원 (보고 받는 자) 전용 메뉴
+  // 1. 경영진 (보고 받는 자) 전용 메뉴
   const executiveNavSections: NavSection[] = [
     {
       title: '👑 경영진 통합 모니터링 & 결재',
@@ -175,10 +175,10 @@ export default function Sidebar() {
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-900/50 border border-blue-400/30'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
               }`}
-              title="보고받는 자 (임원/경영진) 뷰"
+              title="보고받는 자 (경영진) 뷰"
             >
               <Crown size={14} className={currentRole === 'EXECUTIVE' ? 'text-amber-300' : ''} />
-              <span>임원 뷰</span>
+              <span>경영진 뷰</span>
             </button>
 
             <button
@@ -214,7 +214,7 @@ export default function Sidebar() {
           <Compass size={15} className="text-blue-400 shrink-0" />
           <span>
             {currentRole === 'EXECUTIVE' && (
-              <span><strong className="text-amber-400">임원 모드:</strong> 포트폴리오 가시화 및 결재</span>
+              <span><strong className="text-amber-400">경영진 모드:</strong> 포트폴리오 가시화 및 결재</span>
             )}
             {currentRole === 'PM' && (
               <span><strong className="text-indigo-400">PM 모드:</strong> Step 01~07 순서로 데이터 입력</span>
@@ -296,7 +296,7 @@ export default function Sidebar() {
               currentRole === 'ADMIN' ? 'bg-purple-950/80 text-purple-300 border-purple-800/60' :
               'bg-indigo-950/80 text-indigo-300 border-indigo-800/60'
             }`}>
-              {currentRole === 'EXECUTIVE' ? '👑 임원(보고용)' :
+              {currentRole === 'EXECUTIVE' ? '👑 경영진(보고용)' :
                currentRole === 'ADMIN' ? '⚙️ 사이트 관리자' :
                '🎯 프로젝트 PM'}
             </span>

@@ -44,7 +44,7 @@ export default function GateChecksPage() {
 
   const handleApproveAll = () => {
     setGates(prev => prev.map(g => ({ ...g, result: 'PASS' })));
-    alert(`[임원 승인 처리] ${selectedProject.name} 프로젝트의 모든 Gate Review가 'PASS' 승인 완료되었습니다.`);
+    alert(`[경영진 승인 처리] ${selectedProject.name} 프로젝트의 모든 Gate Review가 'PASS' 승인 완료되었습니다.`);
   };
 
   const handleHoldAction = () => {
@@ -63,7 +63,7 @@ export default function GateChecksPage() {
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-1">
               {currentRole === 'EXECUTIVE' && (
                 <span className="px-2.5 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-800/60 flex items-center gap-1">
-                  <Crown size={13} /> 👑 임원 최종 결재 & 승인 콘솔
+                  <Crown size={13} /> 👑 경영진 최종 결재 & 승인 콘솔
                 </span>
               )}
               {currentRole === 'PM' && (
@@ -82,7 +82,7 @@ export default function GateChecksPage() {
               Gate Check 관문 심사 센터 (G1~G6)
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              {currentRole === 'EXECUTIVE' ? '임원 전용: PASS / CONDITIONAL PASS / HOLD 관문 최종 승인 및 경영진 개입 지시' :
+              {currentRole === 'EXECUTIVE' ? '경영진 전용: PASS / CONDITIONAL PASS / HOLD 관문 최종 승인 및 경영진 개입 지시' :
                currentRole === 'PM' ? '프로젝트 PM 전용: 6대 관문 필수 서류 자가점검 및 경영진 결재 요청 제출' :
                '관리자 전용: Gate Review 통과 규정 및 심사자 마스터 관리'}
             </p>
@@ -201,7 +201,7 @@ export default function GateChecksPage() {
               {/* Gate Result Selection Box based on Role */}
               <div className="pt-2 space-y-1">
                 <label className="block text-[11px] font-bold text-slate-400">
-                  {currentRole === 'EXECUTIVE' ? '👑 임원 최종 결재 판정' : '심사 판정 변경'}
+                  {currentRole === 'EXECUTIVE' ? '👑 경영진 최종 결재 판정' : '심사 판정 변경'}
                 </label>
                 <select
                   value={gate.result}

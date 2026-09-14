@@ -56,7 +56,7 @@ export default function PortfolioDashboard() {
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-1">
               {currentRole === 'EXECUTIVE' && (
                 <span className="px-2.5 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-800/60 flex items-center gap-1">
-                  <Crown size={13} /> 👑 임원 보고용 뷰 (Executive View)
+                  <Crown size={13} /> 👑 경영진 보고용 뷰 (Executive View)
                 </span>
               )}
               {currentRole === 'PM' && (
@@ -187,7 +187,7 @@ export default function PortfolioDashboard() {
               전사 사용자 역할 지정 및 PMO 품질 통제 시스템
             </h2>
             <p className="text-sm text-slate-300/90 max-w-3xl leading-relaxed">
-              사용자별 권한(임원, PM, 관리자)을 관리하고 16종 PM Standard 표준 템플릿 양식과 관문 심사 항목을 마스터 수준에서 설정합니다.
+              사용자별 권한(경영진, PM, 관리자)을 관리하고 16종 PM Standard 표준 템플릿 양식과 관문 심사 항목을 마스터 수준에서 설정합니다.
             </p>
           </div>
         )}
