@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { INITIAL_LESSONS_LEARNED, INITIAL_PROJECTS, LessonsLearnedItem } from '@/utils/pmoData';
+import { getFirebaseLessonsLearned, addFirebaseLessonLearned } from '@/services/firestoreService';
 import { 
   BookOpen, 
   Search, 
@@ -38,7 +39,15 @@ export default function LessonsLearnedPage() {
     return matchesSearch && matchesCat && matchesType;
   });
 
-  const handleAddItem = (e: React.FormEvent) => {
+  useEffect(() => {
+    getFirebaseLessonsLearned().then(data => {
+      if (data && data.length > 0) {
+        setItems(data);
+      }
+    });
+  }, []);
+
+  const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle || !newCause || !newGuide) return;
 
@@ -56,6 +65,7 @@ export default function LessonsLearnedPage() {
     };
 
     setItems([newItem, ...items]);
+    await addFirebaseLessonLearned(newItem);
     setIsModalOpen(false);
     setNewTitle('');
     setNewCause('');

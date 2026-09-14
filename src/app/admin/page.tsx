@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { useAuth, Role } from '@/context/AuthContext';
+import { getFirebaseUsers, addFirebaseUser, updateFirebaseUser } from '@/services/firestoreService';
 import { 
   Users, 
   ShieldCheck, 
@@ -76,12 +77,22 @@ export default function AdminPage() {
   const [newRole, setNewRole] = useState<Role>('PM');
   const [newProject, setNewProject] = useState('신규 프로젝트');
 
-  const handleRoleChange = (userId: string, newRole: Role) => {
+  useEffect(() => {
+    getFirebaseUsers().then(data => {
+      if (data && data.length > 0) {
+        setUsers(data as any);
+      }
+    });
+  }, []);
+
+  const handleRoleChange = async (userId: string, newRole: Role) => {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    await updateFirebaseUser(userId, { role: newRole });
   };
 
-  const handleStatusChange = (userId: string, newStatus: SystemUser['status']) => {
+  const handleStatusChange = async (userId: string, newStatus: SystemUser['status']) => {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+    await updateFirebaseUser(userId, { status: newStatus });
   };
 
   const handleDeleteUser = (userId: string, name: string) => {
@@ -90,7 +101,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleAddUserSubmit = (e: React.FormEvent) => {
+  const handleAddUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName || !newEmail) return;
 
@@ -106,10 +117,11 @@ export default function AdminPage() {
     };
 
     setUsers([newUserObj, ...users]);
+    await addFirebaseUser(newUserObj as any);
     setIsAddModalOpen(false);
     setNewName('');
     setNewEmail('');
-    alert(`[신규 계정 생성] ${newName} (${newRole} 권한) 계정이 성공적으로 등록되었습니다.`);
+    alert(`[신규 계정 생성] ${newName} (${newRole} 권한) 계정이 성공적으로 Firebase에 등록되었습니다.`);
   };
 
   const filteredUsers = users.filter(u => {

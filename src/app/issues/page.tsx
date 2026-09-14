@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { INITIAL_ISSUES, INITIAL_PROJECTS, IssueItem } from '@/utils/pmoData';
+import { getFirebaseIssues, addFirebaseIssue } from '@/services/firestoreService';
 import { useAuth, Role } from '@/context/AuthContext';
 import { 
   ShieldAlert, 
@@ -45,7 +46,15 @@ export default function IssuesPage() {
     return matchesSev && matchesType;
   });
 
-  const handleAddIssue = (e: React.FormEvent) => {
+  useEffect(() => {
+    getFirebaseIssues().then(data => {
+      if (data && data.length > 0) {
+        setIssues(data);
+      }
+    });
+  }, []);
+
+  const handleAddIssue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle) return;
 
@@ -66,6 +75,7 @@ export default function IssuesPage() {
     };
 
     setIssues([newItem, ...issues]);
+    await addFirebaseIssue(newItem);
     setIsModalOpen(false);
     setNewTitle('');
     setNewImpact('');

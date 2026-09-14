@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { 
   INITIAL_PROJECTS, 
@@ -8,6 +8,7 @@ import {
   PM_STANDARD_16_ITEMS, 
   Project 
 } from '@/utils/pmoData';
+import { getFirebaseProjects, getFirebaseIssues } from '@/services/firestoreService';
 import { 
   Building2, 
   AlertTriangle, 
@@ -35,8 +36,17 @@ export default function PortfolioDashboard() {
   const { role, setRole } = useAuth();
   const currentRole: Role = role === 'USER' ? 'PM' : role;
 
-  const [projects] = useState<Project[]>(INITIAL_PROJECTS);
-  const [issues] = useState(INITIAL_ISSUES);
+  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
+  const [issues, setIssues] = useState(INITIAL_ISSUES);
+
+  useEffect(() => {
+    getFirebaseProjects().then(data => {
+      if (data && data.length > 0) setProjects(data);
+    });
+    getFirebaseIssues().then(data => {
+      if (data && data.length > 0) setIssues(data);
+    });
+  }, []);
 
   // Financial & Stats calculations
   const totalAmount = projects.reduce((acc, p) => acc + p.contractAmount, 0);

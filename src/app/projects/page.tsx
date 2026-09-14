@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { INITIAL_PROJECTS, Project } from '@/utils/pmoData';
+import { getFirebaseProjects, addFirebaseProject } from '@/services/firestoreService';
 import { 
   FolderKanban, 
   Plus, 
@@ -42,7 +43,15 @@ export default function ProjectsPage() {
     return matchesSearch && matchesStage && matchesHealth;
   });
 
-  const handleAddProject = (e: React.FormEvent) => {
+  useEffect(() => {
+    getFirebaseProjects().then(data => {
+      if (data && data.length > 0) {
+        setProjects(data);
+      }
+    });
+  }, []);
+
+  const handleAddProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCode || !newName || !newClient || !newPm) return;
 
@@ -66,6 +75,7 @@ export default function ProjectsPage() {
     };
 
     setProjects([newProject, ...projects]);
+    await addFirebaseProject(newProject);
     setIsModalOpen(false);
     setNewCode('');
     setNewName('');
