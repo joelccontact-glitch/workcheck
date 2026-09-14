@@ -77,6 +77,7 @@ export default function AdminPage() {
   const [newRank, setNewRank] = useState('수석');
   const [newRole, setNewRole] = useState<Role>('PM');
   const [newProject, setNewProject] = useState('신규 프로젝트');
+  const [newPassword, setNewPassword] = useState('daumis1234!');
 
   useEffect(() => {
     getFirebaseUsers().then(data => {
@@ -120,7 +121,7 @@ export default function AdminPage() {
     setIsAddModalOpen(false);
     setNewName('');
     setNewEmail('');
-    alert(`[신규 계정 생성] ${newName} (${newRole} 권한) 계정이 성공적으로 Firebase에 등록되었습니다.`);
+    alert(`[신규 계정 생성 완료]\n• 사용자: ${newName} (${newRole} 권한)\n• 로그인 ID: ${newEmail}\n• 초기 임시 비밀번호: ${newPassword}\n\n계정이 Firebase DB에 정상 등록되었습니다.`);
   };
 
   const handleResetInitialData = async () => {
@@ -398,6 +399,30 @@ export default function AdminPage() {
                     onChange={e => setNewProject(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">초기 임시 비밀번호</label>
+                  <input
+                    type="text"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
+                    placeholder="daumis1234!"
+                  />
+                </div>
+
+                {/* Password Policy & Activation Guide Box */}
+                <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-800/40 text-[11px] text-purple-200 space-y-1">
+                  <div className="font-bold text-purple-300 flex items-center gap-1.5">
+                    <KeyRound size={13} /> 계정 비밀번호 & 로그인 정책 안내
+                  </div>
+                  <p className="text-slate-300 leading-relaxed">
+                    • <strong>상용/실운영 방식</strong>: 생성 시 이메일로 <strong>초대/비밀번호 설정 링크</strong>가 발송되어 사용자가 비밀번호를 직접 설정합니다.
+                  </p>
+                  <p className="text-slate-300 leading-relaxed">
+                    • <strong>데모 시연 방식</strong>: 초기 비밀번호는 <code className="bg-purple-900/60 px-1 py-0.5 rounded text-amber-300 font-mono">daumis1234!</code>로 설정되며, 이메일만 입력 시 바로 접속할 수 있습니다.
+                  </p>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-2">
