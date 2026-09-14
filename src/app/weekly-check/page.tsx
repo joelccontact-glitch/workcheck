@@ -38,12 +38,12 @@ export default function WeeklyCheckPage() {
 
   useEffect(() => {
     getFirebaseProjects().then(data => {
-      if (data && data.length > 0) setProjects(data);
+      setProjects(data || []);
     });
   }, []);
 
   // Selected Project
-  const currentProject = projects.find(p => p.id === selectedProjectId) || projects[0] || INITIAL_PROJECTS[0];
+  const currentProject = projects.find(p => p.id === selectedProjectId) || projects[0] || null;
 
   // Calculate Health Score
   const healthResult = calculateHealthScore(

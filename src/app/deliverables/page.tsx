@@ -36,11 +36,11 @@ export default function DeliverablesPage() {
 
   useEffect(() => {
     getFirebaseProjects().then(data => {
-      if (data && data.length > 0) setProjects(data);
+      setProjects(data || []);
     });
   }, []);
 
-  const selectedProject = projects.find(p => p.id === selectedProjectId) || projects[0] || INITIAL_PROJECTS[0];
+  const selectedProject = projects.find(p => p.id === selectedProjectId) || projects[0] || null;
 
   const handleStatusChange = (no: number, newStatus: PMDeliverable['status']) => {
     setDeliverables(prev =>
@@ -50,7 +50,7 @@ export default function DeliverablesPage() {
 
   const handleExecutiveApproveAll = () => {
     setDeliverables(prev => prev.map(d => ({ ...d, status: '승인완료' })));
-    alert(`[경영진 최종 승인] ${selectedProject.name}의 16종 PM Standard 산출물이 모두 최종 승인 완료 처리되었습니다.`);
+    alert(`[경영진 최종 승인] ${selectedProject?.name || '프로젝트'}의 16종 PM Standard 산출물이 모두 최종 승인 완료 처리되었습니다.`);
   };
 
   const completedCount = deliverables.filter(d => d.status === '승인완료').length;

@@ -38,11 +38,11 @@ export default function GateChecksPage() {
 
   useEffect(() => {
     getFirebaseProjects().then(data => {
-      if (data && data.length > 0) setProjects(data);
+      setProjects(data || []);
     });
   }, []);
 
-  const selectedProject = projects.find(p => p.id === selectedProjectId) || projects[0] || INITIAL_PROJECTS[0];
+  const selectedProject = projects.find(p => p.id === selectedProjectId) || projects[0] || null;
 
   const handleResultChange = (code: string, newResult: GateCheck['result']) => {
     setGates(prev =>

@@ -80,9 +80,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     getFirebaseUsers().then(data => {
-      if (data && data.length > 0) {
-        setUsers(data as any);
-      }
+      setUsers(data as any || []);
     });
   }, []);
 
@@ -248,7 +246,15 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {filteredUsers.map(u => (
+                {filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-slate-400 text-sm">
+                      <Users size={32} className="mx-auto text-slate-600 mb-2" />
+                      <div>등록된 사용자 계정이 없습니다.</div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map(u => (
                   <tr key={u.id} className="hover:bg-slate-900/40 transition-colors">
                     <td className="p-3.5 font-bold text-white flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-purple-900/50 border border-purple-700/50 flex items-center justify-center text-purple-300 font-black text-xs">
@@ -302,7 +308,7 @@ export default function AdminPage() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>

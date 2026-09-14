@@ -37,47 +37,36 @@ export const INITIAL_USERS: SystemUser[] = [
 ];
 
 // ====================================================================
-// 1. Automatic & Force Data Seeding Functions
+// Data Seeding Functions (Exposed for explicit admin seeding/reset)
 // ====================================================================
 export async function seedFirebaseDataIfEmpty() {
   try {
-    // 1. Check Projects
     const projectsSnap = await getDocs(collection(db, 'projects'));
     if (projectsSnap.empty) {
-      console.log('Seeding initial projects to Firestore...');
       for (const p of INITIAL_PROJECTS) {
         await setDoc(doc(db, 'projects', p.id), p);
       }
     }
-
-    // 2. Check Issues
     const issuesSnap = await getDocs(collection(db, 'issues'));
     if (issuesSnap.empty) {
-      console.log('Seeding initial issues to Firestore...');
       for (const item of INITIAL_ISSUES) {
         await setDoc(doc(db, 'issues', item.id), item);
       }
     }
-
-    // 3. Check Users
     const usersSnap = await getDocs(collection(db, 'users'));
     if (usersSnap.empty) {
-      console.log('Seeding initial users to Firestore...');
       for (const u of INITIAL_USERS) {
         await setDoc(doc(db, 'users', u.id), u);
       }
     }
-
-    // 4. Check Lessons Learned
     const lessonsSnap = await getDocs(collection(db, 'lessons_learned'));
     if (lessonsSnap.empty) {
-      console.log('Seeding initial lessons learned to Firestore...');
       for (const l of INITIAL_LESSONS_LEARNED) {
         await setDoc(doc(db, 'lessons_learned', l.id), l);
       }
     }
   } catch (err) {
-    console.warn('Firebase seeding warning (using local fallback defaults):', err);
+    console.warn('Firebase seeding warning:', err);
   }
 }
 
@@ -96,26 +85,25 @@ export async function forceResetAndSeedInitialFirebaseData(): Promise<void> {
       await setDoc(doc(db, 'lessons_learned', l.id), l);
     }
   } catch (err) {
-    console.error('Error force resetting Firebase initial data:', err);
+    console.error('Error resetting Firebase initial data:', err);
   }
 }
 
 // ====================================================================
-// 2. Projects CRUD with Guarantee of Initial Defaults
+// Projects CRUD (Returns [] when DB has no records)
 // ====================================================================
 export async function getFirebaseProjects(): Promise<Project[]> {
   try {
-    await seedFirebaseDataIfEmpty();
     const snap = await getDocs(collection(db, 'projects'));
-    if (snap.empty) return INITIAL_PROJECTS;
+    if (snap.empty) return [];
     const list: Project[] = [];
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data() } as Project);
     });
-    return list.length > 0 ? list : INITIAL_PROJECTS;
+    return list;
   } catch (err) {
-    console.error('Error fetching projects from Firebase, returning initial default fallback:', err);
-    return INITIAL_PROJECTS;
+    console.error('Error fetching projects from Firebase:', err);
+    return [];
   }
 }
 
@@ -137,21 +125,20 @@ export async function updateFirebaseProject(id: string, updates: Partial<Project
 }
 
 // ====================================================================
-// 3. Issues CRUD with Guarantee of Initial Defaults
+// Issues CRUD (Returns [] when DB has no records)
 // ====================================================================
 export async function getFirebaseIssues(): Promise<IssueItem[]> {
   try {
-    await seedFirebaseDataIfEmpty();
     const snap = await getDocs(collection(db, 'issues'));
-    if (snap.empty) return INITIAL_ISSUES;
+    if (snap.empty) return [];
     const list: IssueItem[] = [];
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data() } as IssueItem);
     });
-    return list.length > 0 ? list : INITIAL_ISSUES;
+    return list;
   } catch (err) {
-    console.error('Error fetching issues from Firebase, returning initial default fallback:', err);
-    return INITIAL_ISSUES;
+    console.error('Error fetching issues from Firebase:', err);
+    return [];
   }
 }
 
@@ -181,21 +168,20 @@ export async function deleteFirebaseIssue(id: string): Promise<void> {
 }
 
 // ====================================================================
-// 4. Users CRUD with Guarantee of Initial Defaults
+// Users CRUD (Returns [] when DB has no records)
 // ====================================================================
 export async function getFirebaseUsers(): Promise<SystemUser[]> {
   try {
-    await seedFirebaseDataIfEmpty();
     const snap = await getDocs(collection(db, 'users'));
-    if (snap.empty) return INITIAL_USERS;
+    if (snap.empty) return [];
     const list: SystemUser[] = [];
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data() } as SystemUser);
     });
-    return list.length > 0 ? list : INITIAL_USERS;
+    return list;
   } catch (err) {
-    console.error('Error fetching users from Firebase, returning initial default fallback:', err);
-    return INITIAL_USERS;
+    console.error('Error fetching users from Firebase:', err);
+    return [];
   }
 }
 
@@ -217,21 +203,20 @@ export async function updateFirebaseUser(id: string, updates: Partial<SystemUser
 }
 
 // ====================================================================
-// 5. Lessons Learned CRUD with Guarantee of Initial Defaults
+// Lessons Learned CRUD (Returns [] when DB has no records)
 // ====================================================================
 export async function getFirebaseLessonsLearned(): Promise<LessonsLearnedItem[]> {
   try {
-    await seedFirebaseDataIfEmpty();
     const snap = await getDocs(collection(db, 'lessons_learned'));
-    if (snap.empty) return INITIAL_LESSONS_LEARNED;
+    if (snap.empty) return [];
     const list: LessonsLearnedItem[] = [];
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data() } as LessonsLearnedItem);
     });
-    return list.length > 0 ? list : INITIAL_LESSONS_LEARNED;
+    return list;
   } catch (err) {
-    console.error('Error fetching lessons learned from Firebase, returning initial default fallback:', err);
-    return INITIAL_LESSONS_LEARNED;
+    console.error('Error fetching lessons learned from Firebase:', err);
+    return [];
   }
 }
 

@@ -45,9 +45,7 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     getFirebaseProjects().then(data => {
-      if (data && data.length > 0) {
-        setProjects(data);
-      }
+      setProjects(data || []);
     });
   }, []);
 
@@ -158,8 +156,15 @@ export default function ProjectsPage() {
         </div>
 
         {/* Project Grid / Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredProjects.map((p) => (
+        {filteredProjects.length === 0 ? (
+          <div className="pmo-card p-12 text-center space-y-3 col-span-full">
+            <FolderKanban size={40} className="mx-auto text-slate-600" />
+            <h3 className="text-lg font-bold text-slate-300">등록된 프로젝트가 없습니다</h3>
+            <p className="text-xs text-slate-400">우측 상단 '+ 신규 프로젝트 등록' 버튼을 누르거나 조건 검색을 변경해주세요.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredProjects.map((p) => (
             <div key={p.id} className="pmo-card pmo-card-hover space-y-4 relative group">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -239,6 +244,7 @@ export default function ProjectsPage() {
             </div>
           ))}
         </div>
+        )}
 
         {/* New Project Registration Modal */}
         {isModalOpen && (

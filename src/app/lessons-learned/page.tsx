@@ -41,9 +41,7 @@ export default function LessonsLearnedPage() {
 
   useEffect(() => {
     getFirebaseLessonsLearned().then(data => {
-      if (data && data.length > 0) {
-        setItems(data);
-      }
+      setItems(data || []);
     });
   }, []);
 
@@ -154,7 +152,14 @@ export default function LessonsLearnedPage() {
 
         {/* Lessons Learned List Cards */}
         <div className="space-y-4">
-          {filteredItems.map((item) => (
+          {filteredItems.length === 0 ? (
+            <div className="pmo-card p-12 text-center space-y-3">
+              <BookOpen size={40} className="mx-auto text-slate-600" />
+              <h3 className="text-lg font-bold text-slate-300">축적된 Lessons Learned 사례가 없습니다</h3>
+              <p className="text-xs text-slate-400">신규 사례를 등록하거나 검색 필터 조건을 변경해주세요.</p>
+            </div>
+          ) : (
+            filteredItems.map((item) => (
             <div key={item.id} className="pmo-card pmo-card-hover space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="space-y-1">
@@ -191,7 +196,7 @@ export default function LessonsLearnedPage() {
                 </div>
               </div>
             </div>
-          ))}
+          )))}
         </div>
 
         {/* New Item Modal */}

@@ -41,10 +41,10 @@ export default function PortfolioDashboard() {
 
   useEffect(() => {
     getFirebaseProjects().then(data => {
-      if (data && data.length > 0) setProjects(data);
+      setProjects(data || []);
     });
     getFirebaseIssues().then(data => {
-      if (data && data.length > 0) setIssues(data);
+      setIssues(data || []);
     });
   }, []);
 

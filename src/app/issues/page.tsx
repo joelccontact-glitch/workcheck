@@ -48,9 +48,7 @@ export default function IssuesPage() {
 
   useEffect(() => {
     getFirebaseIssues().then(data => {
-      if (data && data.length > 0) {
-        setIssues(data);
-      }
+      setIssues(data || []);
     });
   }, []);
 
@@ -217,7 +215,16 @@ export default function IssuesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {filteredIssues.map((item) => (
+                {filteredIssues.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                      <ShieldAlert size={36} className="mx-auto text-slate-600 mb-2" />
+                      <div className="font-bold text-sm text-slate-300">등록된 Risk / Issue가 없습니다.</div>
+                      <div className="text-xs text-slate-500 mt-1">신규 리스크를 등록하거나 필터 옵션을 변경하세요.</div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredIssues.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-900/40 transition-colors">
                     <td className="py-4 px-3 space-y-1">
                       <div className="font-mono font-bold text-slate-300">{item.id}</div>
@@ -255,7 +262,7 @@ export default function IssuesPage() {
                       </span>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>
