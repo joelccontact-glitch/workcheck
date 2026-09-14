@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { PM_STANDARD_16_ITEMS, INITIAL_PROJECTS, PMDeliverable } from '@/utils/pmoData';
+import { useAuth, Role } from '@/context/AuthContext';
 import { 
   FileCheck2, 
   Search, 
@@ -13,10 +14,16 @@ import {
   Download, 
   Upload, 
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Crown,
+  Briefcase,
+  Plus
 } from 'lucide-react';
 
 export default function DeliverablesPage() {
+  const { role } = useAuth();
+  const currentRole: Role = role === 'USER' ? 'PM' : role;
+
   const [selectedProjectId, setSelectedProjectId] = useState<string>('1');
   const [deliverables, setDeliverables] = useState<PMDeliverable[]>(
     PM_STANDARD_16_ITEMS.map((item) => ({
@@ -33,6 +40,11 @@ export default function DeliverablesPage() {
     );
   };
 
+  const handleExecutiveApproveAll = () => {
+    setDeliverables(prev => prev.map(d => ({ ...d, status: '승인완료' })));
+    alert(`[경영진 최종 승인] ${selectedProject.name}의 16종 PM Standard 산출물이 모두 최종 승인 완료 처리되었습니다.`);
+  };
+
   const completedCount = deliverables.filter(d => d.status === '승인완료').length;
   const inProgressCount = deliverables.filter(d => d.status === '작성중' || d.status === '검토중').length;
   const unstartedCount = deliverables.filter(d => d.status === '미작성').length;
@@ -45,17 +57,51 @@ export default function DeliverablesPage() {
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
           <div>
-            <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">
-              16 PM Standard Minimum Deliverables
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-1">
+              {currentRole === 'EXECUTIVE' && (
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-800/60 flex items-center gap-1">
+                  <Crown size={13} /> 👑 임원 최종 승인 & 검토 콘솔
+                </span>
+              )}
+              {currentRole === 'PM' && (
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 border border-indigo-800/60 flex items-center gap-1">
+                  <Briefcase size={13} /> 🎯 PM 16종 표준 산출물 등록 & 작성 (Step 05)
+                </span>
+              )}
+              {currentRole === 'ADMIN' && (
+                <span className="px-2.5 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-800/60 flex items-center gap-1">
+                  <FileCheck2 size={13} /> ⚙️ PMO 16종 마스터 템플릿 양식 관리
+                </span>
+              )}
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
               <FileCheck2 className="text-indigo-400" size={28} />
               PM Standard 최소 산출물 16종 관리 체계
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              보고서 5페이지 규정 PM Standard 최소 산출물 16종 서식 및 전사 이행 현황
+              {currentRole === 'EXECUTIVE' ? '임원 전용: 프로젝트 산출물 최종 결재 승인 및 서식 품질 점검 보고' :
+               currentRole === 'PM' ? 'PM 전용: 16종 표준 산출물 양식 다운로드, 작성 및 검토 승인 요청 (Step 05)' :
+               '관리자 전용: 전사 16종 표준 서식 마스터 템플릿 제공 및 이행 현황 관리'}
             </p>
           </div>
+
+          {currentRole === 'EXECUTIVE' && (
+            <button
+              onClick={handleExecutiveApproveAll}
+              className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition-all shadow-lg shadow-amber-600/30 flex items-center gap-1.5"
+            >
+              <Crown size={16} /> 16종 산출물 일괄 최종 승인
+            </button>
+          )}
+
+          {currentRole === 'PM' && (
+            <button
+              onClick={() => alert(`[PM 산출물 업로드] 16종 표준 산출물 파일 첨부 모달이 시작됩니다.`)}
+              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-1.5"
+            >
+              <Upload size={16} /> 신규 산출물 파일 업로드
+            </button>
+          )}
         </header>
 
         {/* Project Selector Bar */}
@@ -102,7 +148,7 @@ export default function DeliverablesPage() {
                   <th className="py-3 px-3">작성 시점</th>
                   <th className="py-3 px-3">Owner (책임자)</th>
                   <th className="py-3 px-3">이행 상태</th>
-                  <th className="py-3 px-3">상태 변경</th>
+                  <th className="py-3 px-3">역할별 상태 변경</th>
                   <th className="py-3 px-3">서식 / 작업</th>
                 </tr>
               </thead>
@@ -141,7 +187,7 @@ export default function DeliverablesPage() {
                         <option value="미작성">미작성</option>
                         <option value="작성중">작성중</option>
                         <option value="검토중">검토중</option>
-                        <option value="승인완료">승인완료</option>
+                        <option value="승인완료">👑 승인완료</option>
                       </select>
                     </td>
                     <td className="py-3.5 px-3">
@@ -149,7 +195,7 @@ export default function DeliverablesPage() {
                         onClick={() => alert(`${d.name} 표준 서식 템플릿 다운로드가 시작되었습니다.`)}
                         className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-semibold text-[11px] flex items-center gap-1 transition-colors"
                       >
-                        <Download size={12} /> 표준 템플릿
+                        <Download size={13} /> 양식 다운
                       </button>
                     </td>
                   </tr>

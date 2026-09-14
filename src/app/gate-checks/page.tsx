@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { GATES_DEFINITION, INITIAL_PROJECTS, GateCheck } from '@/utils/pmoData';
+import { useAuth, Role } from '@/context/AuthContext';
 import { 
   Sliders, 
   CheckCircle2, 
@@ -13,10 +14,16 @@ import {
   ChevronRight,
   Filter,
   FileCheck2,
-  Lock
+  Lock,
+  Crown,
+  Briefcase,
+  CheckSquare
 } from 'lucide-react';
 
 export default function GateChecksPage() {
+  const { role } = useAuth();
+  const currentRole: Role = role === 'USER' ? 'PM' : role;
+
   const [selectedProjectId, setSelectedProjectId] = useState<string>('3'); // C project
   const [gates, setGates] = useState<GateCheck[]>(
     GATES_DEFINITION.map((g, idx) => ({
@@ -35,6 +42,16 @@ export default function GateChecksPage() {
     );
   };
 
+  const handleApproveAll = () => {
+    setGates(prev => prev.map(g => ({ ...g, result: 'PASS' })));
+    alert(`[임원 승인 처리] ${selectedProject.name} 프로젝트의 모든 Gate Review가 'PASS' 승인 완료되었습니다.`);
+  };
+
+  const handleHoldAction = () => {
+    setGates(prev => prev.map(g => g.code === 'G2' ? { ...g, result: 'HOLD' } : g));
+    alert(`[경영진 지시] ${selectedProject.name} 프로젝트 G2 요구사항 Gate가 HOLD 처리되었으며, Recovery 회의 소집 통보가 전송되었습니다.`);
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans">
       <Sidebar />
@@ -43,17 +60,59 @@ export default function GateChecksPage() {
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
           <div>
-            <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">
-              Gate Review & Escalation Governance
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-1">
+              {currentRole === 'EXECUTIVE' && (
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-800/60 flex items-center gap-1">
+                  <Crown size={13} /> 👑 임원 최종 결재 & 승인 콘솔
+                </span>
+              )}
+              {currentRole === 'PM' && (
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 border border-indigo-800/60 flex items-center gap-1">
+                  <Briefcase size={13} /> 🎯 PM Gate Review 자가진단 제출 (Step 04)
+                </span>
+              )}
+              {currentRole === 'ADMIN' && (
+                <span className="px-2.5 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-800/60 flex items-center gap-1">
+                  <Sliders size={13} /> ⚙️ Gate Review 마스터 설정
+                </span>
+              )}
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
               <Sliders className="text-blue-400" size={28} />
               Gate Check 관문 심사 센터 (G1~G6)
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              보고서 9페이지 Gate Check 체계: PASS / CONDITIONAL PASS / HOLD 통과 관문 판정
+              {currentRole === 'EXECUTIVE' ? '임원 전용: PASS / CONDITIONAL PASS / HOLD 관문 최종 승인 및 경영진 개입 지시' :
+               currentRole === 'PM' ? '프로젝트 PM 전용: 6대 관문 필수 서류 자가점검 및 경영진 결재 요청 제출' :
+               '관리자 전용: Gate Review 통과 규정 및 심사자 마스터 관리'}
             </p>
           </div>
+
+          {currentRole === 'EXECUTIVE' && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleApproveAll}
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-lg shadow-emerald-600/30 flex items-center gap-1.5"
+              >
+                <CheckCircle2 size={16} /> 일괄 PASS 결재 승인
+              </button>
+              <button
+                onClick={handleHoldAction}
+                className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-all shadow-lg shadow-rose-600/30 flex items-center gap-1.5"
+              >
+                <ShieldAlert size={16} /> G2 HOLD 처리 & Recovery 소집
+              </button>
+            </div>
+          )}
+
+          {currentRole === 'PM' && (
+            <button
+              onClick={() => alert(`[PM 제출] ${selectedProject.name} 프로젝트의 Gate Review 자가진단표가 PMO 및 경영진에 결재 요청 제출되었습니다.`)}
+              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-1.5"
+            >
+              <CheckSquare size={16} /> Gate 심사 요청서 제출
+            </button>
+          )}
         </header>
 
         {/* Project Filter */}
@@ -81,7 +140,7 @@ export default function GateChecksPage() {
           </div>
         </div>
 
-        {/* Decision Rules Banner (PDF Page 9 Rules) */}
+        {/* Decision Rules Banner */}
         <div className="p-4 rounded-2xl bg-blue-950/40 border border-blue-800/40 text-xs space-y-1 text-slate-300">
           <div className="font-bold text-blue-300 flex items-center gap-1.5 text-sm">
             <Lock size={16} /> Gate 결과 판정 및 진입 규정
@@ -139,9 +198,11 @@ export default function GateChecksPage() {
                 </div>
               </div>
 
-              {/* Gate Result Selection Box */}
+              {/* Gate Result Selection Box based on Role */}
               <div className="pt-2 space-y-1">
-                <label className="block text-[11px] font-bold text-slate-400">심사 결과 변경 판정</label>
+                <label className="block text-[11px] font-bold text-slate-400">
+                  {currentRole === 'EXECUTIVE' ? '👑 임원 최종 결재 판정' : '심사 판정 변경'}
+                </label>
                 <select
                   value={gate.result}
                   onChange={(e) => handleResultChange(gate.code, e.target.value as any)}
