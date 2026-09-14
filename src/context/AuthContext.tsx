@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { useRouter, usePathname } from 'next/navigation';
 
-type Role = 'ADMIN' | 'USER';
+export type Role = 'ADMIN' | 'EXECUTIVE' | 'PM' | 'USER';
 
 interface Profile {
   full_name: string;
@@ -137,19 +137,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (data) {
-        const intentRole = localStorage.getItem('login_intent_role') as Role;
-        const dbRoles = (data.role || 'USER').split(',').map((r: string) => r.trim());
+        const savedActiveRole = localStorage.getItem('active_view_role') as Role;
+        const dbRoles = (data.role || 'EXECUTIVE').split(',').map((r: string) => r.trim());
         
-        let finalRole: Role = 'USER';
-        if (intentRole && dbRoles.includes(intentRole)) {
-          finalRole = intentRole;
-        } else if (dbRoles.includes('ADMIN')) {
-          finalRole = 'ADMIN';
-        }
+        let finalRole: Role = savedActiveRole || (dbRoles.includes('ADMIN') ? 'ADMIN' : dbRoles.includes('PM') ? 'PM' : 'EXECUTIVE');
 
         const newProfile: Profile = {
           full_name: data.full_name || '사용자',
-          role: data.role || 'USER',
+          role: data.role || 'EXECUTIVE',
           active_role: finalRole,
           department_id: data.department_id,
           team: data.team || '소속 없음',
@@ -174,6 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handleSignOut = async () => {
     setLoading(true);
     localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem('active_view_role');
     await supabase.auth.signOut();
     setProfile(null);
     setSupabaseUser(null);
@@ -186,10 +182,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setRole = (newRole: Role) => {
+    localStorage.setItem('active_view_role', newRole);
     if (profile) {
       const updated = { ...profile, active_role: newRole };
       setProfile(updated);
       localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
+    } else {
+      setProfile({
+        full_name: '테스트 사용자',
+        role: newRole,
+        active_role: newRole,
+        team: 'PMO팀',
+        rank: '수석',
+        total_leave: 15,
+        used_leave: 0,
+        work_start_time: '09:00:00',
+        work_end_time: '18:00:00'
+      });
     }
   };
 
@@ -231,7 +240,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    return {
+      role: 'EXECUTIVE' as Role,
+      user: null,
+      loading: false,
+      signOut: async () => {},
+      refreshProfile: async () => {},
+      setRole: () => {}
+    };
   }
   return context;
 }

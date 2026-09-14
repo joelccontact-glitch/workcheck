@@ -28,8 +28,13 @@ import {
   FolderKanban
 } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth, Role } from '@/context/AuthContext';
+import { Crown, Briefcase, ShieldCheck, Settings } from 'lucide-react';
 
 export default function PortfolioDashboard() {
+  const { role, setRole } = useAuth();
+  const currentRole: Role = role === 'USER' ? 'PM' : role;
+
   const [projects] = useState<Project[]>(INITIAL_PROJECTS);
   const [issues] = useState(INITIAL_ISSUES);
 
@@ -48,50 +53,163 @@ export default function PortfolioDashboard() {
         {/* Top Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">
-              <Sparkles size={14} /> 경영진 보고용 (Executive Overview)
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-1">
+              {currentRole === 'EXECUTIVE' && (
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-800/60 flex items-center gap-1">
+                  <Crown size={13} /> 👑 임원 보고용 뷰 (Executive View)
+                </span>
+              )}
+              {currentRole === 'PM' && (
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 border border-indigo-800/60 flex items-center gap-1">
+                  <Briefcase size={13} /> 🎯 프로젝트 PM 작업 뷰 (Manager View)
+                </span>
+              )}
+              {currentRole === 'ADMIN' && (
+                <span className="px-2.5 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-800/60 flex items-center gap-1">
+                  <ShieldCheck size={13} /> ⚙️ 사이트 관리자 운영 뷰 (Admin View)
+                </span>
+              )}
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
-              PMO 포트폴리오 대시보드
+              {currentRole === 'EXECUTIVE' && 'PMO 포트폴리오 종합 보고 대시보드'}
+              {currentRole === 'PM' && 'PM 프로젝트 관리 & Step 01~07 작업 현황'}
+              {currentRole === 'ADMIN' && 'PMO 포털 시스템 관리자 운영 콘솔'}
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              전사 프로젝트 위험·수익성·품질 조기 가시화 및 선제적 의사결정 체계
+              {currentRole === 'EXECUTIVE' && '전사 프로젝트 위험·수익성·품질 가시화 및 6대 관문 결재 종합 대시보드'}
+              {currentRole === 'PM' && '프로젝트 착수부터 주간 점검, Gate Check, 16종 산출물 등록까지 일괄 CRUD 프로세스'}
+              {currentRole === 'ADMIN' && '사용자 계정 권한 부여, PMO 16종 템플릿 마스터, 교육 체계 및 시스템 운영 통제'}
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              href="/weekly-check"
-              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all shadow-lg shadow-blue-600/30 flex items-center gap-2"
-            >
-              <Activity size={16} /> 주간 점검표 작성
-            </Link>
-            <Link
-              href="/gate-checks"
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition-all flex items-center gap-2"
-            >
-              <Layers size={16} /> Gate Review 현황
-            </Link>
+          <div className="flex items-center gap-2">
+            {currentRole === 'EXECUTIVE' && (
+              <>
+                <Link
+                  href="/gate-checks"
+                  className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-sm transition-all shadow-lg shadow-amber-600/30 flex items-center gap-2"
+                >
+                  <Layers size={16} /> Gate Review 결재 ({redProjectsCount}건 확인)
+                </Link>
+                <Link
+                  href="/issues"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition-all flex items-center gap-2"
+                >
+                  <ShieldAlert size={16} /> Red 이슈 현황
+                </Link>
+              </>
+            )}
+
+            {currentRole === 'PM' && (
+              <>
+                <Link
+                  href="/weekly-check"
+                  className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-2"
+                >
+                  <Activity size={16} /> 금주 점검표 작성 (Step 03)
+                </Link>
+                <Link
+                  href="/projects"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition-all flex items-center gap-2"
+                >
+                  <FolderKanban size={16} /> 신규 프로젝트 등록 (Step 02)
+                </Link>
+              </>
+            )}
+
+            {currentRole === 'ADMIN' && (
+              <>
+                <Link
+                  href="/admin"
+                  className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-sm transition-all shadow-lg shadow-purple-600/30 flex items-center gap-2"
+                >
+                  <Users size={16} /> 계정 & 권한 설정
+                </Link>
+                <Link
+                  href="/settings"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition-all flex items-center gap-2"
+                >
+                  <Settings size={16} /> PMO 마스터 템플릿
+                </Link>
+              </>
+            )}
           </div>
         </header>
 
-        {/* Core Vision & Proposal Banner */}
-        <div className="p-6 rounded-2xl bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 border border-blue-800/40 shadow-xl relative overflow-hidden">
-          <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none text-blue-400">
-            <Building2 size={240} />
+        {/* Role-Specific Core Proposition & Quick Workflow Banner */}
+        {currentRole === 'PM' && (
+          <div className="p-6 rounded-2xl bg-gradient-to-r from-indigo-950 via-slate-900 to-blue-950 border border-indigo-800/40 shadow-xl relative overflow-hidden space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="px-3 py-1 rounded-full bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 text-xs font-bold tracking-wide">
+                프로젝트 담당자(PM) 데이터 구축 가이드 (Step 01 ➔ Step 07)
+              </span>
+              <span className="text-xs text-indigo-300 font-semibold">순차적 CRUD 작업 가이드</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 text-xs">
+              <Link href="/academy" className="p-3 rounded-xl bg-slate-900/80 border border-indigo-800/40 hover:border-indigo-500 transition-all space-y-1 block">
+                <div className="text-[10px] font-bold text-indigo-400 uppercase">Step 01</div>
+                <div className="font-bold text-white text-xs truncate">PM 역량/프로필</div>
+              </Link>
+              <Link href="/projects" className="p-3 rounded-xl bg-slate-900/80 border border-indigo-800/40 hover:border-indigo-500 transition-all space-y-1 block">
+                <div className="text-[10px] font-bold text-indigo-400 uppercase">Step 02</div>
+                <div className="font-bold text-white text-xs truncate">프로젝트 착수</div>
+              </Link>
+              <Link href="/weekly-check" className="p-3 rounded-xl bg-slate-900/80 border border-indigo-800/40 hover:border-indigo-500 transition-all space-y-1 block">
+                <div className="text-[10px] font-bold text-indigo-400 uppercase">Step 03</div>
+                <div className="font-bold text-white text-xs truncate">주간점검 & Health</div>
+              </Link>
+              <Link href="/gate-checks" className="p-3 rounded-xl bg-slate-900/80 border border-indigo-800/40 hover:border-indigo-500 transition-all space-y-1 block">
+                <div className="text-[10px] font-bold text-indigo-400 uppercase">Step 04</div>
+                <div className="font-bold text-white text-xs truncate">Gate Review</div>
+              </Link>
+              <Link href="/deliverables" className="p-3 rounded-xl bg-slate-900/80 border border-indigo-800/40 hover:border-indigo-500 transition-all space-y-1 block">
+                <div className="text-[10px] font-bold text-indigo-400 uppercase">Step 05</div>
+                <div className="font-bold text-white text-xs truncate">16종 PM 표준</div>
+              </Link>
+              <Link href="/issues" className="p-3 rounded-xl bg-slate-900/80 border border-indigo-800/40 hover:border-indigo-500 transition-all space-y-1 block">
+                <div className="text-[10px] font-bold text-indigo-400 uppercase">Step 06</div>
+                <div className="font-bold text-white text-xs truncate">Risk/Issue 등록</div>
+              </Link>
+              <Link href="/lessons-learned" className="p-3 rounded-xl bg-slate-900/80 border border-indigo-800/40 hover:border-indigo-500 transition-all space-y-1 block">
+                <div className="text-[10px] font-bold text-indigo-400 uppercase">Step 07</div>
+                <div className="font-bold text-white text-xs truncate">Lessons Learned</div>
+              </Link>
+            </div>
           </div>
-          <div className="relative z-10 space-y-2">
-            <span className="px-3 py-1 rounded-full bg-blue-900/60 text-blue-300 border border-blue-700/50 text-xs font-bold tracking-wide">
-              PMO 핵심 제안 (Core Proposition)
+        )}
+
+        {currentRole === 'ADMIN' && (
+          <div className="p-6 rounded-2xl bg-gradient-to-r from-purple-950 via-slate-900 to-slate-950 border border-purple-800/40 shadow-xl relative overflow-hidden space-y-3">
+            <span className="px-3 py-1 rounded-full bg-purple-900/60 text-purple-300 border border-purple-700/50 text-xs font-bold tracking-wide">
+              사이트 관리자 통제 센터 (System Master Console)
             </span>
             <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">
-              &quot;잘하는 PM의 경험&quot;을 &quot;누구나 실행할 수 있는 회사의 표준&quot;으로 전환
+              전사 사용자 역할 지정 및 PMO 품질 통제 시스템
             </h2>
             <p className="text-sm text-slate-300/90 max-w-3xl leading-relaxed">
-              개인 경험 의존 및 문제 발생 후 사후 개입 방식을 탈피하고, <strong className="text-blue-400 font-semibold">16종 PM Standard</strong>, <strong className="text-blue-400 font-semibold">Health Score 조기경보</strong>, <strong className="text-blue-400 font-semibold">Gate Review</strong> 체계를 연결하여 프로젝트 손익 및 리스크를 조기 회복합니다.
+              사용자별 권한(임원, PM, 관리자)을 관리하고 16종 PM Standard 표준 템플릿 양식과 관문 심사 항목을 마스터 수준에서 설정합니다.
             </p>
           </div>
-        </div>
+        )}
+
+        {currentRole === 'EXECUTIVE' && (
+          <div className="p-6 rounded-2xl bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 border border-blue-800/40 shadow-xl relative overflow-hidden">
+            <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none text-blue-400">
+              <Building2 size={240} />
+            </div>
+            <div className="relative z-10 space-y-2">
+              <span className="px-3 py-1 rounded-full bg-blue-900/60 text-blue-300 border border-blue-700/50 text-xs font-bold tracking-wide">
+                PMO 핵심 제안 (Core Proposition)
+              </span>
+              <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+                &quot;잘하는 PM의 경험&quot;을 &quot;누구나 실행할 수 있는 회사의 표준&quot;으로 전환
+              </h2>
+              <p className="text-sm text-slate-300/90 max-w-3xl leading-relaxed">
+                개인 경험 의존 및 문제 발생 후 사후 개입 방식을 탈피하고, <strong className="text-blue-400 font-semibold">16종 PM Standard</strong>, <strong className="text-blue-400 font-semibold">Health Score 조기경보</strong>, <strong className="text-blue-400 font-semibold">Gate Review</strong> 체계를 연결하여 프로젝트 손익 및 리스크를 조기 회복합니다.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Executive Key Metrics (KPIs) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">

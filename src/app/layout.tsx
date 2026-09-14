@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
   title: "다음정보시스템즈 PMO 운영체계 포털 | DaumIS PMO Portal",
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="ko" className="dark">
       <body className="bg-slate-950 text-slate-100 antialiased selection:bg-blue-500 selection:text-white min-h-screen">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
