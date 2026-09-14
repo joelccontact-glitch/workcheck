@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { calculateHealthScore, INITIAL_PROJECTS, Project } from '@/utils/pmoData';
+import { getFirebaseProjects } from '@/services/firestoreService';
 import { 
   CheckSquare, 
   AlertTriangle, 
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function WeeklyCheckPage() {
+  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('3'); // Default to C project (Red)
   const [weekLabel, setWeekLabel] = useState('2026년 9월 2주차 (2026-W37)');
 
@@ -34,8 +36,14 @@ export default function WeeklyCheckPage() {
   const [hasCriticalRedFlag, setHasCriticalRedFlag] = useState(true);
   const [redFlagReason, setRedFlagReason] = useState('일정 지연 >10% & 요구사항 승인 지연 (Recovery Plan 필요)');
 
+  useEffect(() => {
+    getFirebaseProjects().then(data => {
+      if (data && data.length > 0) setProjects(data);
+    });
+  }, []);
+
   // Selected Project
-  const currentProject = INITIAL_PROJECTS.find(p => p.id === selectedProjectId) || INITIAL_PROJECTS[0];
+  const currentProject = projects.find(p => p.id === selectedProjectId) || projects[0] || INITIAL_PROJECTS[0];
 
   // Calculate Health Score
   const healthResult = calculateHealthScore(
@@ -100,7 +108,7 @@ export default function WeeklyCheckPage() {
                 onChange={(e) => setSelectedProjectId(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm font-bold text-white focus:outline-none focus:border-blue-500"
               >
-                {INITIAL_PROJECTS.map((p) => (
+                {projects.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.code} - {p.name} (PM: {p.pmName})
                   </option>

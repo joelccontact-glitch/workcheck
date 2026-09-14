@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
-import { GATES_DEFINITION, INITIAL_PROJECTS, GateCheck } from '@/utils/pmoData';
+import { GATES_DEFINITION, INITIAL_PROJECTS, GateCheck, Project } from '@/utils/pmoData';
+import { getFirebaseProjects } from '@/services/firestoreService';
 import { useAuth, Role } from '@/context/AuthContext';
 import { 
   Sliders, 
@@ -24,6 +25,7 @@ export default function GateChecksPage() {
   const { role } = useAuth();
   const currentRole: Role = role === 'USER' ? 'PM' : role;
 
+  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('3'); // C project
   const [gates, setGates] = useState<GateCheck[]>(
     GATES_DEFINITION.map((g, idx) => ({
@@ -34,7 +36,13 @@ export default function GateChecksPage() {
     }))
   );
 
-  const selectedProject = INITIAL_PROJECTS.find(p => p.id === selectedProjectId) || INITIAL_PROJECTS[0];
+  useEffect(() => {
+    getFirebaseProjects().then(data => {
+      if (data && data.length > 0) setProjects(data);
+    });
+  }, []);
+
+  const selectedProject = projects.find(p => p.id === selectedProjectId) || projects[0] || INITIAL_PROJECTS[0];
 
   const handleResultChange = (code: string, newResult: GateCheck['result']) => {
     setGates(prev =>
@@ -125,7 +133,7 @@ export default function GateChecksPage() {
                 onChange={(e) => setSelectedProjectId(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm font-bold text-white focus:outline-none focus:border-blue-500"
               >
-                {INITIAL_PROJECTS.map((p) => (
+                {projects.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.code} - {p.name} (PM: {p.pmName})
                   </option>

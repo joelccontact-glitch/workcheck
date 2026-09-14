@@ -4,7 +4,6 @@ import {
   doc, 
   getDocs, 
   setDoc, 
-  addDoc, 
   updateDoc, 
   deleteDoc
 } from 'firebase/firestore';
@@ -38,7 +37,7 @@ export const INITIAL_USERS: SystemUser[] = [
 ];
 
 // ====================================================================
-// 1. Automatic Data Seeding Function
+// 1. Automatic & Force Data Seeding Functions
 // ====================================================================
 export async function seedFirebaseDataIfEmpty() {
   try {
@@ -78,12 +77,31 @@ export async function seedFirebaseDataIfEmpty() {
       }
     }
   } catch (err) {
-    console.warn('Firebase seeding warning:', err);
+    console.warn('Firebase seeding warning (using local fallback defaults):', err);
+  }
+}
+
+export async function forceResetAndSeedInitialFirebaseData(): Promise<void> {
+  try {
+    for (const p of INITIAL_PROJECTS) {
+      await setDoc(doc(db, 'projects', p.id), p);
+    }
+    for (const item of INITIAL_ISSUES) {
+      await setDoc(doc(db, 'issues', item.id), item);
+    }
+    for (const u of INITIAL_USERS) {
+      await setDoc(doc(db, 'users', u.id), u);
+    }
+    for (const l of INITIAL_LESSONS_LEARNED) {
+      await setDoc(doc(db, 'lessons_learned', l.id), l);
+    }
+  } catch (err) {
+    console.error('Error force resetting Firebase initial data:', err);
   }
 }
 
 // ====================================================================
-// 2. Projects CRUD
+// 2. Projects CRUD with Guarantee of Initial Defaults
 // ====================================================================
 export async function getFirebaseProjects(): Promise<Project[]> {
   try {
@@ -94,9 +112,9 @@ export async function getFirebaseProjects(): Promise<Project[]> {
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data() } as Project);
     });
-    return list;
+    return list.length > 0 ? list : INITIAL_PROJECTS;
   } catch (err) {
-    console.error('Error fetching projects from Firebase:', err);
+    console.error('Error fetching projects from Firebase, returning initial default fallback:', err);
     return INITIAL_PROJECTS;
   }
 }
@@ -119,7 +137,7 @@ export async function updateFirebaseProject(id: string, updates: Partial<Project
 }
 
 // ====================================================================
-// 3. Issues CRUD
+// 3. Issues CRUD with Guarantee of Initial Defaults
 // ====================================================================
 export async function getFirebaseIssues(): Promise<IssueItem[]> {
   try {
@@ -130,9 +148,9 @@ export async function getFirebaseIssues(): Promise<IssueItem[]> {
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data() } as IssueItem);
     });
-    return list;
+    return list.length > 0 ? list : INITIAL_ISSUES;
   } catch (err) {
-    console.error('Error fetching issues from Firebase:', err);
+    console.error('Error fetching issues from Firebase, returning initial default fallback:', err);
     return INITIAL_ISSUES;
   }
 }
@@ -163,7 +181,7 @@ export async function deleteFirebaseIssue(id: string): Promise<void> {
 }
 
 // ====================================================================
-// 4. Users CRUD
+// 4. Users CRUD with Guarantee of Initial Defaults
 // ====================================================================
 export async function getFirebaseUsers(): Promise<SystemUser[]> {
   try {
@@ -174,9 +192,9 @@ export async function getFirebaseUsers(): Promise<SystemUser[]> {
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data() } as SystemUser);
     });
-    return list;
+    return list.length > 0 ? list : INITIAL_USERS;
   } catch (err) {
-    console.error('Error fetching users from Firebase:', err);
+    console.error('Error fetching users from Firebase, returning initial default fallback:', err);
     return INITIAL_USERS;
   }
 }
@@ -199,7 +217,7 @@ export async function updateFirebaseUser(id: string, updates: Partial<SystemUser
 }
 
 // ====================================================================
-// 5. Lessons Learned CRUD
+// 5. Lessons Learned CRUD with Guarantee of Initial Defaults
 // ====================================================================
 export async function getFirebaseLessonsLearned(): Promise<LessonsLearnedItem[]> {
   try {
@@ -210,9 +228,9 @@ export async function getFirebaseLessonsLearned(): Promise<LessonsLearnedItem[]>
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data() } as LessonsLearnedItem);
     });
-    return list;
+    return list.length > 0 ? list : INITIAL_LESSONS_LEARNED;
   } catch (err) {
-    console.error('Error fetching lessons learned from Firebase:', err);
+    console.error('Error fetching lessons learned from Firebase, returning initial default fallback:', err);
     return INITIAL_LESSONS_LEARNED;
   }
 }

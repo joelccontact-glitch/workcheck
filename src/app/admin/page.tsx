@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { useAuth, Role } from '@/context/AuthContext';
-import { getFirebaseUsers, addFirebaseUser, updateFirebaseUser } from '@/services/firestoreService';
+import { getFirebaseUsers, addFirebaseUser, updateFirebaseUser, forceResetAndSeedInitialFirebaseData } from '@/services/firestoreService';
 import { 
   Users, 
   ShieldCheck, 
@@ -16,7 +16,8 @@ import {
   Trash2,
   KeyRound,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  RotateCcw
 } from 'lucide-react';
 
 interface SystemUser {
@@ -124,6 +125,15 @@ export default function AdminPage() {
     alert(`[신규 계정 생성] ${newName} (${newRole} 권한) 계정이 성공적으로 Firebase에 등록되었습니다.`);
   };
 
+  const handleResetInitialData = async () => {
+    if (confirm('Firebase DB의 모든 컬렉션을 초기 표준 데모 데이터로 재설정하시겠습니까?')) {
+      await forceResetAndSeedInitialFirebaseData();
+      const freshUsers = await getFirebaseUsers();
+      setUsers(freshUsers as any);
+      alert('Firebase DB가 초기 표준 데모 데이터로 성공적으로 복원되었습니다.');
+    }
+  };
+
   const filteredUsers = users.filter(u => {
     const matchesSearch = u.name.includes(searchTerm) || u.email.includes(searchTerm) || u.team.includes(searchTerm);
     const matchesRole = filterRole === 'ALL' || u.role === filterRole;
@@ -149,12 +159,22 @@ export default function AdminPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all shadow-lg shadow-purple-600/30 flex items-center gap-2"
-          >
-            <UserPlus size={18} /> 신규 사용자 계정 생성
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleResetInitialData}
+              className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 font-bold text-xs transition-all flex items-center gap-2"
+              title="Firebase DB 데이터 초기화 및 데모 데이터 복원"
+            >
+              <RotateCcw size={16} className="text-amber-400" /> 초기 데이터 복원
+            </button>
+
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all shadow-lg shadow-purple-600/30 flex items-center gap-2"
+            >
+              <UserPlus size={18} /> 신규 사용자 계정 생성
+            </button>
+          </div>
         </header>
 
         {/* Role Overview Statistics Cards */}
