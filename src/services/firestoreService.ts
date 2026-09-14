@@ -37,36 +37,40 @@ export const INITIAL_USERS: SystemUser[] = [
 ];
 
 // ====================================================================
-// Data Seeding Functions (Exposed for explicit admin seeding/reset)
+// Automatic & Force Data Seeding Functions into Firebase Firestore DB
 // ====================================================================
 export async function seedFirebaseDataIfEmpty() {
   try {
     const projectsSnap = await getDocs(collection(db, 'projects'));
     if (projectsSnap.empty) {
+      console.log('Seeding mandatory initial projects into Firebase Firestore...');
       for (const p of INITIAL_PROJECTS) {
         await setDoc(doc(db, 'projects', p.id), p);
       }
     }
     const issuesSnap = await getDocs(collection(db, 'issues'));
     if (issuesSnap.empty) {
+      console.log('Seeding mandatory initial issues into Firebase Firestore...');
       for (const item of INITIAL_ISSUES) {
         await setDoc(doc(db, 'issues', item.id), item);
       }
     }
     const usersSnap = await getDocs(collection(db, 'users'));
     if (usersSnap.empty) {
+      console.log('Seeding mandatory initial users into Firebase Firestore...');
       for (const u of INITIAL_USERS) {
         await setDoc(doc(db, 'users', u.id), u);
       }
     }
     const lessonsSnap = await getDocs(collection(db, 'lessons_learned'));
     if (lessonsSnap.empty) {
+      console.log('Seeding mandatory initial lessons into Firebase Firestore...');
       for (const l of INITIAL_LESSONS_LEARNED) {
         await setDoc(doc(db, 'lessons_learned', l.id), l);
       }
     }
   } catch (err) {
-    console.warn('Firebase seeding warning:', err);
+    console.warn('Firebase DB seeding warning:', err);
   }
 }
 
@@ -90,10 +94,11 @@ export async function forceResetAndSeedInitialFirebaseData(): Promise<void> {
 }
 
 // ====================================================================
-// Projects CRUD (Returns [] when DB has no records)
+// Projects CRUD (Auto-seeds if DB is empty)
 // ====================================================================
 export async function getFirebaseProjects(): Promise<Project[]> {
   try {
+    await seedFirebaseDataIfEmpty();
     const snap = await getDocs(collection(db, 'projects'));
     if (snap.empty) return [];
     const list: Project[] = [];
@@ -125,10 +130,11 @@ export async function updateFirebaseProject(id: string, updates: Partial<Project
 }
 
 // ====================================================================
-// Issues CRUD (Returns [] when DB has no records)
+// Issues CRUD (Auto-seeds if DB is empty)
 // ====================================================================
 export async function getFirebaseIssues(): Promise<IssueItem[]> {
   try {
+    await seedFirebaseDataIfEmpty();
     const snap = await getDocs(collection(db, 'issues'));
     if (snap.empty) return [];
     const list: IssueItem[] = [];
@@ -168,10 +174,11 @@ export async function deleteFirebaseIssue(id: string): Promise<void> {
 }
 
 // ====================================================================
-// Users CRUD (Returns [] when DB has no records)
+// Users CRUD (Auto-seeds if DB is empty)
 // ====================================================================
 export async function getFirebaseUsers(): Promise<SystemUser[]> {
   try {
+    await seedFirebaseDataIfEmpty();
     const snap = await getDocs(collection(db, 'users'));
     if (snap.empty) return [];
     const list: SystemUser[] = [];
@@ -203,10 +210,11 @@ export async function updateFirebaseUser(id: string, updates: Partial<SystemUser
 }
 
 // ====================================================================
-// Lessons Learned CRUD (Returns [] when DB has no records)
+// Lessons Learned CRUD (Auto-seeds if DB is empty)
 // ====================================================================
 export async function getFirebaseLessonsLearned(): Promise<LessonsLearnedItem[]> {
   try {
+    await seedFirebaseDataIfEmpty();
     const snap = await getDocs(collection(db, 'lessons_learned'));
     if (snap.empty) return [];
     const list: LessonsLearnedItem[] = [];
