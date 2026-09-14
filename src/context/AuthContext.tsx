@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
 export type Role = 'ADMIN' | 'EXECUTIVE' | 'PM' | 'USER';
@@ -65,9 +65,8 @@ const USER_SESSION_KEY = 'daumis_pmo_user_session';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
   
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(PRESET_USERS.EXECUTIVE);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(PRESET_USERS.ADMIN);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -75,12 +74,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const savedSession = localStorage.getItem(USER_SESSION_KEY);
       if (savedSession) {
         const parsed = JSON.parse(savedSession) as UserProfile;
+        // Ensure assigned role limits active_role
+        if (parsed.role !== 'ADMIN') {
+          parsed.active_role = parsed.role;
+        }
         setCurrentUser(parsed);
       } else {
-        localStorage.setItem(USER_SESSION_KEY, JSON.stringify(PRESET_USERS.EXECUTIVE));
+        localStorage.setItem(USER_SESSION_KEY, JSON.stringify(PRESET_USERS.ADMIN));
       }
     } catch (e) {
-      setCurrentUser(PRESET_USERS.EXECUTIVE);
+      setCurrentUser(PRESET_USERS.ADMIN);
     }
   }, []);
 
@@ -92,16 +95,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.replace('/login');
   };
 
-  const setRole = (newRole: Role) => {
-    const roleKey = newRole === 'USER' ? 'PM' : newRole;
-    if (currentUser) {
-      const updated = { ...currentUser, active_role: roleKey, role: roleKey };
+  const setRole = (requestedRole: Role) => {
+    if (!currentUser) return;
+
+    // Superuser (ADMIN) can switch between any active role view freely
+    if (currentUser.role === 'ADMIN') {
+      const targetRoleKey = requestedRole === 'USER' ? 'PM' : requestedRole;
+      const updated = { ...currentUser, active_role: targetRoleKey };
       setCurrentUser(updated);
       localStorage.setItem(USER_SESSION_KEY, JSON.stringify(updated));
     } else {
-      const preset = PRESET_USERS[roleKey] || PRESET_USERS.EXECUTIVE;
-      setCurrentUser(preset);
-      localStorage.setItem(USER_SESSION_KEY, JSON.stringify(preset));
+      // Non-admin roles (EXECUTIVE, PM) are strictly locked to their assigned role
+      const lockedRole = currentUser.role === 'USER' ? 'PM' : currentUser.role;
+      const updated = { ...currentUser, active_role: lockedRole };
+      setCurrentUser(updated);
+      localStorage.setItem(USER_SESSION_KEY, JSON.stringify(updated));
     }
   };
 
@@ -112,8 +120,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       else if (presetKey.includes('park') || presetKey.includes('pm')) target = PRESET_USERS.PM;
       else target = PRESET_USERS.ADMIN;
     }
-    setCurrentUser(target);
-    localStorage.setItem(USER_SESSION_KEY, JSON.stringify(target));
+    const userSession: UserProfile = {
+      ...target,
+      active_role: target.role
+    };
+    setCurrentUser(userSession);
+    localStorage.setItem(USER_SESSION_KEY, JSON.stringify(userSession));
     router.push('/');
   };
 
@@ -121,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ 
-      role: currentUser?.active_role || 'EXECUTIVE', 
+      role: currentUser?.active_role || 'ADMIN', 
       user: currentUser, 
       loading,
       signOut: handleSignOut,
@@ -138,8 +150,8 @@ export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
     return {
-      role: 'EXECUTIVE' as Role,
-      user: PRESET_USERS.EXECUTIVE,
+      role: 'ADMIN' as Role,
+      user: PRESET_USERS.ADMIN,
       loading: false,
       signOut: async () => {},
       refreshProfile: async () => {},

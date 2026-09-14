@@ -161,52 +161,74 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Role Switcher Buttons */}
+        {/* Role Switcher Section (RBAC Controlled) */}
         <div className="p-3 border-b border-slate-800/80 bg-slate-950/40">
-          <div className="text-[11px] font-bold text-slate-400 mb-1.5 flex items-center justify-between">
-            <span>사용자 뷰 (역할) 선택</span>
-            <span className="text-[10px] text-blue-400 font-medium">실시간 전환</span>
-          </div>
-          <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800/80 text-[11px]">
-            <button
-              onClick={() => setRole('EXECUTIVE')}
-              className={`py-1.5 rounded-lg font-bold transition-all flex flex-col items-center gap-1 ${
-                currentRole === 'EXECUTIVE'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/50 border border-blue-400/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-              }`}
-              title="보고받는 자 (경영진) 뷰"
-            >
-              <Crown size={14} className={currentRole === 'EXECUTIVE' ? 'text-amber-300' : ''} />
-              <span>경영진 뷰</span>
-            </button>
+          {user?.role === 'ADMIN' ? (
+            <>
+              <div className="text-[11px] font-bold text-purple-400 mb-1.5 flex items-center justify-between">
+                <span>⚡ 슈퍼유저 뷰 전환</span>
+                <span className="text-[10px] text-purple-300 font-bold px-1.5 py-0.5 rounded bg-purple-950 border border-purple-800">모든 뷰 접근</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800/80 text-[11px]">
+                <button
+                  onClick={() => setRole('EXECUTIVE')}
+                  className={`py-1.5 rounded-lg font-bold transition-all flex flex-col items-center gap-1 ${
+                    currentRole === 'EXECUTIVE'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-900/50 border border-blue-400/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                  }`}
+                  title="보고받는 자 (경영진) 뷰"
+                >
+                  <Crown size={14} className={currentRole === 'EXECUTIVE' ? 'text-amber-300' : ''} />
+                  <span>경영진 뷰</span>
+                </button>
 
-            <button
-              onClick={() => setRole('PM')}
-              className={`py-1.5 rounded-lg font-bold transition-all flex flex-col items-center gap-1 ${
-                currentRole === 'PM'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/50 border border-indigo-400/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-              }`}
-              title="프로젝트 등록/관리 (PM) 뷰"
-            >
-              <Briefcase size={14} className={currentRole === 'PM' ? 'text-indigo-200' : ''} />
-              <span>PM 뷰</span>
-            </button>
+                <button
+                  onClick={() => setRole('PM')}
+                  className={`py-1.5 rounded-lg font-bold transition-all flex flex-col items-center gap-1 ${
+                    currentRole === 'PM'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/50 border border-indigo-400/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                  }`}
+                  title="프로젝트 등록/관리 (PM) 뷰"
+                >
+                  <Briefcase size={14} className={currentRole === 'PM' ? 'text-indigo-200' : ''} />
+                  <span>PM 뷰</span>
+                </button>
 
-            <button
-              onClick={() => setRole('ADMIN')}
-              className={`py-1.5 rounded-lg font-bold transition-all flex flex-col items-center gap-1 ${
-                currentRole === 'ADMIN'
-                  ? 'bg-purple-600 text-white shadow-md shadow-purple-900/50 border border-purple-400/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-              }`}
-              title="사이트 관리자 (운영/권한) 뷰"
-            >
-              <ShieldCheck size={14} className={currentRole === 'ADMIN' ? 'text-purple-200' : ''} />
-              <span>관리자</span>
-            </button>
-          </div>
+                <button
+                  onClick={() => setRole('ADMIN')}
+                  className={`py-1.5 rounded-lg font-bold transition-all flex flex-col items-center gap-1 ${
+                    currentRole === 'ADMIN'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-900/50 border border-purple-400/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                  }`}
+                  title="사이트 관리자 (운영/권한) 뷰"
+                >
+                  <ShieldCheck size={14} className={currentRole === 'ADMIN' ? 'text-purple-200' : ''} />
+                  <span>관리자</span>
+                </button>
+              </div>
+            </>
+          ) : user?.role === 'EXECUTIVE' ? (
+            <div className="p-2 rounded-xl bg-amber-950/40 border border-amber-800/60 text-xs text-amber-300 space-y-1">
+              <div className="font-extrabold flex items-center gap-1 text-[11px]">
+                <Crown size={13} className="text-amber-400" /> 🔒 경영진 전용 계정 권한
+              </div>
+              <p className="text-[10px] text-slate-400 leading-tight">
+                경영진 보고용 대시보드 및 관문 결재 메뉴만 접근 가능합니다.
+              </p>
+            </div>
+          ) : (
+            <div className="p-2 rounded-xl bg-indigo-950/40 border border-indigo-800/60 text-xs text-indigo-300 space-y-1">
+              <div className="font-extrabold flex items-center gap-1 text-[11px]">
+                <Briefcase size={13} className="text-indigo-400" /> 🔒 PM 전용 계정 권한
+              </div>
+              <p className="text-[10px] text-slate-400 leading-tight">
+                프로젝트 등록/수정 및 Step 01~07 메뉴만 접근 가능합니다.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Dynamic Mode Guide Banner */}

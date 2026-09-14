@@ -38,11 +38,35 @@ const INITIAL_USERS: SystemUser[] = [
 ];
 
 export default function AdminPage() {
-  const { role } = useAuth();
+  const { user } = useAuth();
   const [users, setUsers] = useState<SystemUser[]>(INITIAL_USERS);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<string>('ALL');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Permission Guard: non-ADMIN users cannot access Admin Console
+  if (user?.role !== 'ADMIN') {
+    return (
+      <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans">
+        <Sidebar />
+        <main className="flex-1 lg:ml-72 p-8 flex flex-col items-center justify-center min-h-[80vh] text-center space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-rose-950/80 border border-rose-800/80 flex items-center justify-center text-rose-400 font-bold text-2xl shadow-xl">
+            <ShieldCheck size={36} />
+          </div>
+          <h2 className="text-2xl font-extrabold text-white">⛔ 접근 권한 제한 (403 Permission Denied)</h2>
+          <p className="text-sm text-slate-400 max-w-md leading-relaxed">
+            사이트 관리자(슈퍼유저) 계정만 계정 생성, 역할 부여 및 사용자 관리 센터에 진입할 수 있습니다.
+          </p>
+          <a
+            href="/"
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all shadow-lg shadow-blue-600/30 inline-block mt-2"
+          >
+            대시보드 메인으로 돌아가기
+          </a>
+        </main>
+      </div>
+    );
+  }
 
   // New User Form State
   const [newName, setNewName] = useState('');
