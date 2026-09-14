@@ -149,7 +149,7 @@ export default function AdminPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div className="pmo-card border-amber-900/40 bg-amber-950/10 space-y-2">
             <div className="flex items-center justify-between text-amber-400 text-xs font-bold uppercase">
-              <span className="flex items-center gap-1.5"><Crown size={16} /> 👑 경영진 (보고 받는 자)</span>
+              <span className="flex items-center gap-1.5"><Crown size={16} /> 👑 경영진</span>
               <span className="text-lg font-black">{users.filter(u => u.role === 'EXECUTIVE').length} 명</span>
             </div>
             <p className="text-xs text-slate-400">전사 포트폴리오 가시화, 리스크 에스컬레이션 및 Gate Review 승인 권한</p>
@@ -157,7 +157,7 @@ export default function AdminPage() {
 
           <div className="pmo-card border-indigo-900/40 bg-indigo-950/10 space-y-2">
             <div className="flex items-center justify-between text-indigo-400 text-xs font-bold uppercase">
-              <span className="flex items-center gap-1.5"><Briefcase size={16} /> 🎯 프로젝트 PM (작업자)</span>
+              <span className="flex items-center gap-1.5"><Briefcase size={16} /> 🎯 프로젝트 PM</span>
               <span className="text-lg font-black">{users.filter(u => u.role === 'PM').length} 명</span>
             </div>
             <p className="text-xs text-slate-400">Step 01~07 프로세스를 거쳐 프로젝트 데이터, 주간점검표, 산출물 등록 권한</p>
@@ -240,9 +240,9 @@ export default function AdminPage() {
                           'bg-indigo-950/80 text-indigo-300 border-indigo-800/60'
                         }`}
                       >
-                        <option value="EXECUTIVE" className="bg-slate-900 text-amber-300">👑 경영진 (보고 받는 자)</option>
-                        <option value="PM" className="bg-slate-900 text-indigo-300">🎯 프로젝트 PM (작업자)</option>
-                        <option value="ADMIN" className="bg-slate-900 text-purple-300">⚙️ 사이트 관리자 (운영자)</option>
+                        <option value="EXECUTIVE" className="bg-slate-900 text-amber-300">👑 경영진</option>
+                        <option value="PM" className="bg-slate-900 text-indigo-300">🎯 프로젝트 PM</option>
+                        <option value="ADMIN" className="bg-slate-900 text-purple-300">⚙️ 사이트 관리자</option>
                       </select>
                     </td>
                     <td className="p-3.5 text-center">
@@ -345,9 +345,9 @@ export default function AdminPage() {
                       onChange={e => setNewRole(e.target.value as Role)}
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-bold"
                     >
-                      <option value="EXECUTIVE">👑 경영진 (보고 받는 자)</option>
-                      <option value="PM">🎯 프로젝트 PM (작업자)</option>
-                      <option value="ADMIN">⚙️ 사이트 관리자 (운영자)</option>
+                      <option value="EXECUTIVE">👑 경영진</option>
+                      <option value="PM">🎯 프로젝트 PM</option>
+                      <option value="ADMIN">⚙️ 사이트 관리자</option>
                     </select>
                   </div>
                 </div>

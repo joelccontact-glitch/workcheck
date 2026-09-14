@@ -177,7 +177,7 @@ export default function Sidebar() {
                       ? 'bg-blue-600 text-white shadow-md shadow-blue-900/50 border border-blue-400/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                   }`}
-                  title="보고받는 자 (경영진) 뷰"
+                  title="경영진 뷰"
                 >
                   <Crown size={14} className={currentRole === 'EXECUTIVE' ? 'text-amber-300' : ''} />
                   <span>경영진 뷰</span>
@@ -318,7 +318,7 @@ export default function Sidebar() {
               currentRole === 'ADMIN' ? 'bg-purple-950/80 text-purple-300 border-purple-800/60' :
               'bg-indigo-950/80 text-indigo-300 border-indigo-800/60'
             }`}>
-              {currentRole === 'EXECUTIVE' ? '👑 경영진(보고용)' :
+              {currentRole === 'EXECUTIVE' ? '👑 경영진' :
                currentRole === 'ADMIN' ? '⚙️ 사이트 관리자' :
                '🎯 프로젝트 PM'}
             </span>

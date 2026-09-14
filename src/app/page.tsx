@@ -56,17 +56,17 @@ export default function PortfolioDashboard() {
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-1">
               {currentRole === 'EXECUTIVE' && (
                 <span className="px-2.5 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-800/60 flex items-center gap-1">
-                  <Crown size={13} /> 👑 경영진 보고용 뷰 (Executive View)
+                  <Crown size={13} /> 👑 경영진 뷰
                 </span>
               )}
               {currentRole === 'PM' && (
                 <span className="px-2.5 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 border border-indigo-800/60 flex items-center gap-1">
-                  <Briefcase size={13} /> 🎯 프로젝트 PM 작업 뷰 (Manager View)
+                  <Briefcase size={13} /> 🎯 프로젝트 PM 뷰
                 </span>
               )}
               {currentRole === 'ADMIN' && (
                 <span className="px-2.5 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-800/60 flex items-center gap-1">
-                  <ShieldCheck size={13} /> ⚙️ 사이트 관리자 운영 뷰 (Admin View)
+                  <ShieldCheck size={13} /> ⚙️ 사이트 관리자 뷰
                 </span>
               )}
             </div>

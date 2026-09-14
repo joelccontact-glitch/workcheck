@@ -59,7 +59,7 @@ export default function LoginPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="px-3 py-1 rounded-full bg-amber-950 text-amber-300 border border-amber-800/80 text-xs font-bold flex items-center gap-1">
-                    <Crown size={14} /> 👑 경영진 (보고 받는 자)
+                    <Crown size={14} /> 👑 경영진
                   </span>
                   <span className="text-[10px] text-slate-500 font-mono">ID: kim@daumis.co.kr</span>
                 </div>
@@ -88,7 +88,7 @@ export default function LoginPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="px-3 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800/80 text-xs font-bold flex items-center gap-1">
-                    <Briefcase size={14} /> 🎯 프로젝트 PM (작업자)
+                    <Briefcase size={14} /> 🎯 프로젝트 PM
                   </span>
                   <span className="text-[10px] text-slate-500 font-mono">ID: pm.park@daumis.co.kr</span>
                 </div>
@@ -117,7 +117,7 @@ export default function LoginPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="px-3 py-1 rounded-full bg-purple-950 text-purple-300 border border-purple-800/80 text-xs font-bold flex items-center gap-1">
-                    <ShieldCheck size={14} /> ⚙️ 사이트 관리자 (운영자)
+                    <ShieldCheck size={14} /> ⚙️ 사이트 관리자
                   </span>
                   <span className="text-[10px] text-slate-500 font-mono">ID: pmo@daumis.co.kr</span>
                 </div>
