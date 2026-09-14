@@ -8,7 +8,14 @@ import {
   ShieldCheck, 
   Crown, 
   Briefcase, 
-  Search
+  Search,
+  Plus,
+  UserPlus,
+  X,
+  Trash2,
+  KeyRound,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
 interface SystemUser {
@@ -19,7 +26,7 @@ interface SystemUser {
   rank: string;
   role: Role;
   assignedProject: string;
-  status: '승인완료' | '승인대기';
+  status: '승인완료' | '승인대기' | '비활성화';
 }
 
 const INITIAL_USERS: SystemUser[] = [
@@ -31,13 +38,54 @@ const INITIAL_USERS: SystemUser[] = [
 ];
 
 export default function AdminPage() {
-  const { role, setRole } = useAuth();
+  const { role } = useAuth();
   const [users, setUsers] = useState<SystemUser[]>(INITIAL_USERS);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<string>('ALL');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // New User Form State
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newTeam, setNewTeam] = useState('PMO본부');
+  const [newRank, setNewRank] = useState('수석');
+  const [newRole, setNewRole] = useState<Role>('PM');
+  const [newProject, setNewProject] = useState('신규 프로젝트');
 
   const handleRoleChange = (userId: string, newRole: Role) => {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+  };
+
+  const handleStatusChange = (userId: string, newStatus: SystemUser['status']) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+  };
+
+  const handleDeleteUser = (userId: string, name: string) => {
+    if (confirm(`${name} 사용자 계정을 정말로 삭제하시겠습니까?`)) {
+      setUsers(prev => prev.filter(u => u.id !== userId));
+    }
+  };
+
+  const handleAddUserSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName || !newEmail) return;
+
+    const newUserObj: SystemUser = {
+      id: String(Date.now()),
+      name: newName,
+      email: newEmail,
+      team: newTeam,
+      rank: newRank,
+      role: newRole,
+      assignedProject: newProject,
+      status: '승인완료'
+    };
+
+    setUsers([newUserObj, ...users]);
+    setIsAddModalOpen(false);
+    setNewName('');
+    setNewEmail('');
+    alert(`[신규 계정 생성] ${newName} (${newRole} 권한) 계정이 성공적으로 등록되었습니다.`);
   };
 
   const filteredUsers = users.filter(u => {
@@ -58,12 +106,19 @@ export default function AdminPage() {
               <ShieldCheck size={14} /> 사이트 관리자 전용 콘솔 (Site Admin Center)
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
-              사용자 계정 & 역할/권한 관리
+              사용자 계정 & 역할/권한 부여 시스템
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              임원, 프로젝트 PM, 시스템 관리자 역할 지정 및 권한 제어
+              신규 계정 생성, 역할(임원 / PM / 관리자) 지정, 승인/비활성화 통제 및 담당 프로젝트 설정
             </p>
           </div>
+
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all shadow-lg shadow-purple-600/30 flex items-center gap-2"
+          >
+            <UserPlus size={18} /> 신규 사용자 계정 생성
+          </button>
         </header>
 
         {/* Role Overview Statistics Cards */}
@@ -128,11 +183,12 @@ export default function AdminPage() {
               <thead>
                 <tr className="border-b border-slate-800 text-slate-400 uppercase font-semibold text-[11px] bg-slate-900/60">
                   <th className="p-3.5">사용자명 / 직급</th>
-                  <th className="p-3.5">이메일</th>
+                  <th className="p-3.5">이메일 계정</th>
                   <th className="p-3.5">소속 부서</th>
                   <th className="p-3.5">담당 프로젝트</th>
-                  <th className="p-3.5">역할(권한) 변경</th>
-                  <th className="p-3.5 text-center">상태</th>
+                  <th className="p-3.5">역할(권한) 지정</th>
+                  <th className="p-3.5 text-center">계정 상태</th>
+                  <th className="p-3.5 text-center">관리 액션</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -166,9 +222,28 @@ export default function AdminPage() {
                       </select>
                     </td>
                     <td className="p-3.5 text-center">
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/60 text-[10px] font-bold">
-                        {u.status}
-                      </span>
+                      <select
+                        value={u.status}
+                        onChange={e => handleStatusChange(u.id, e.target.value as any)}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold border focus:outline-none ${
+                          u.status === '승인완료' ? 'bg-emerald-950 text-emerald-400 border-emerald-800' :
+                          u.status === '승인대기' ? 'bg-amber-950 text-amber-400 border-amber-800' :
+                          'bg-rose-950 text-rose-400 border-rose-800'
+                        }`}
+                      >
+                        <option value="승인완료">승인완료</option>
+                        <option value="승인대기">승인대기</option>
+                        <option value="비활성화">비활성화</option>
+                      </select>
+                    </td>
+                    <td className="p-3.5 text-center">
+                      <button
+                        onClick={() => handleDeleteUser(u.id, u.name)}
+                        className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border border-slate-700 transition-colors"
+                        title="사용자 삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -176,6 +251,112 @@ export default function AdminPage() {
             </table>
           </div>
         </div>
+
+        {/* Modal for Add User */}
+        {isAddModalOpen && (
+          <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <UserPlus className="text-purple-400" size={20} />
+                  신규 사용자 계정 생성 & 역할 부여
+                </h3>
+                <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddUserSubmit} className="space-y-4 text-xs">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">사용자 이름</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="예: 홍길동"
+                      value={newName}
+                      onChange={e => setNewName(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">직급</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="예: 수석, 이사, 전무"
+                      value={newRank}
+                      onChange={e => setNewRank(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">이메일 계정</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="hong@daumis.co.kr"
+                    value={newEmail}
+                    onChange={e => setNewEmail(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">소속 부서</label>
+                    <input
+                      type="text"
+                      value={newTeam}
+                      onChange={e => setNewTeam(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">부여할 역할 (권한)</label>
+                    <select
+                      value={newRole}
+                      onChange={e => setNewRole(e.target.value as Role)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-bold"
+                    >
+                      <option value="EXECUTIVE">👑 임원 (보고 받는 자)</option>
+                      <option value="PM">🎯 프로젝트 PM (작업자)</option>
+                      <option value="ADMIN">⚙️ 사이트 관리자 (운영자)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">담당 프로젝트</label>
+                  <input
+                    type="text"
+                    value={newProject}
+                    onChange={e => setNewProject(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold"
+                  >
+                    계정 생성 및 권한 부여
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -1,236 +1,133 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import { User } from '@supabase/supabase-js';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
 export type Role = 'ADMIN' | 'EXECUTIVE' | 'PM' | 'USER';
 
-interface Profile {
-  full_name: string;
-  role: string;
-  department_id?: number;
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
   team: string;
   rank: string;
-  total_leave: number;
-  used_leave: number;
-  work_start_time: string;
-  work_end_time: string;
-  cached_uid?: string;
+  role: Role;
   active_role: Role;
+  work_start_time?: string;
+  work_end_time?: string;
+  total_leave?: number;
+  used_leave?: number;
 }
+
+export const PRESET_USERS: Record<string, UserProfile> = {
+  EXECUTIVE: {
+    id: 'user-exec-01',
+    email: 'kim@daumis.co.kr',
+    name: '김철수',
+    team: '경영전략실',
+    rank: '전무',
+    role: 'EXECUTIVE',
+    active_role: 'EXECUTIVE'
+  },
+  PM: {
+    id: 'user-pm-01',
+    email: 'pm.park@daumis.co.kr',
+    name: '박민우',
+    team: 'SI사업1팀',
+    rank: '수석',
+    role: 'PM',
+    active_role: 'PM'
+  },
+  ADMIN: {
+    id: 'user-admin-01',
+    email: 'pmo@daumis.co.kr',
+    name: '김지훈',
+    team: 'PMO본부',
+    rank: '이사',
+    role: 'ADMIN',
+    active_role: 'ADMIN'
+  }
+};
 
 interface AuthContextType {
   role: Role;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    team: string;
-    rank: string;
-    total_leave: number;
-    used_leave: number;
-    work_start_time: string;
-    work_end_time: string;
-  } | null;
+  user: UserProfile | null;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   setRole: (role: Role) => void;
+  loginAsPreset: (presetKey: 'EXECUTIVE' | 'PM' | 'ADMIN' | string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const CACHE_KEY = 'workcheck_profile_v9';
+const USER_SESSION_KEY = 'daumis_pmo_user_session';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const supabase = createClient();
   const router = useRouter();
   const pathname = usePathname();
   
-  const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [sessionVerified, setSessionVerified] = useState(false);
-  const fetchLock = useRef(false);
-
-  const publicPaths = ['/login', '/signup', '/auth/callback'];
-  const isPublicPath = publicPaths.includes(pathname);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(PRESET_USERS.EXECUTIVE);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // 1. [절대 보안] Failsafe Timeout (5초)
-    // 어떤 이유로든 5초 안에 초기화가 안 되면 로딩을 강제로 풉니다.
-    const failsafe = setTimeout(() => {
-      setLoading(false);
-      setSessionVerified(true);
-    }, 5000);
-
-    const checkInitialSession = async () => {
-      try {
-        // [캐시 로드] 성능을 위해 먼저 로컬 데이터를 로드
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            setProfile(parsed);
-          } catch (e) { /* ignore */ }
-        }
-
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user ?? null;
-        
-        setSupabaseUser(user);
-
-        if (user) {
-          await fetchProfile(user.id, true);
-        } else {
-          setLoading(false);
-          if (!isPublicPath) router.replace('/login');
-        }
-      } catch (err) {
-        console.error('[Auth] Init failed', err);
-        setLoading(false);
-      } finally {
-        setSessionVerified(true);
-        clearTimeout(failsafe);
-      }
-    };
-
-    checkInitialSession();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event: any, session: any) => {
-        const user = session?.user ?? null;
-        setSupabaseUser(user);
-        setSessionVerified(true);
-        
-        if (user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
-          await fetchProfile(user.id, true);
-        } else if (event === 'SIGNED_OUT') {
-          setProfile(null);
-          setSupabaseUser(null);
-          localStorage.clear();
-          setLoading(false);
-          if (!isPublicPath) router.replace('/login');
-        }
-      }
-    );
-
-    return () => {
-      clearTimeout(failsafe);
-      authListener.subscription.unsubscribe();
-    };
-  }, [pathname]);
-
-  const fetchProfile = async (userId: string, isBackground = false) => {
-    if (fetchLock.current) return;
-    fetchLock.current = true;
-    
-    if (!isBackground) setLoading(true);
-
     try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (data) {
-        const savedActiveRole = localStorage.getItem('active_view_role') as Role;
-        const dbRoles = (data.role || 'EXECUTIVE').split(',').map((r: string) => r.trim());
-        
-        let finalRole: Role = savedActiveRole || (dbRoles.includes('ADMIN') ? 'ADMIN' : dbRoles.includes('PM') ? 'PM' : 'EXECUTIVE');
-
-        const newProfile: Profile = {
-          full_name: data.full_name || '사용자',
-          role: data.role || 'EXECUTIVE',
-          active_role: finalRole,
-          department_id: data.department_id,
-          team: data.team || '소속 없음',
-          rank: data.rank || '직급 없음',
-          total_leave: data.total_leave || 15,
-          used_leave: data.used_leave || 0,
-          work_start_time: data.work_start_time || '09:00:00',
-          work_end_time: data.work_end_time || '18:00:00',
-          cached_uid: userId
-        };
-        setProfile(newProfile);
-        localStorage.setItem(CACHE_KEY, JSON.stringify(newProfile));
+      const savedSession = localStorage.getItem(USER_SESSION_KEY);
+      if (savedSession) {
+        const parsed = JSON.parse(savedSession) as UserProfile;
+        setCurrentUser(parsed);
+      } else {
+        localStorage.setItem(USER_SESSION_KEY, JSON.stringify(PRESET_USERS.EXECUTIVE));
       }
-    } catch (err) {
-      console.error('[Auth] Fetch Profile failed', err);
-    } finally {
-      fetchLock.current = false;
-      setLoading(false);
+    } catch (e) {
+      setCurrentUser(PRESET_USERS.EXECUTIVE);
     }
-  };
+  }, []);
 
   const handleSignOut = async () => {
     setLoading(true);
-    localStorage.removeItem(CACHE_KEY);
-    localStorage.removeItem('active_view_role');
-    await supabase.auth.signOut();
-    setProfile(null);
-    setSupabaseUser(null);
+    localStorage.removeItem(USER_SESSION_KEY);
+    setCurrentUser(null);
     setLoading(false);
     router.replace('/login');
   };
 
-  const refreshProfile = async () => {
-    if (supabaseUser) await fetchProfile(supabaseUser.id, true);
-  };
-
   const setRole = (newRole: Role) => {
-    localStorage.setItem('active_view_role', newRole);
-    if (profile) {
-      const updated = { ...profile, active_role: newRole };
-      setProfile(updated);
-      localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
+    const roleKey = newRole === 'USER' ? 'PM' : newRole;
+    if (currentUser) {
+      const updated = { ...currentUser, active_role: roleKey, role: roleKey };
+      setCurrentUser(updated);
+      localStorage.setItem(USER_SESSION_KEY, JSON.stringify(updated));
     } else {
-      setProfile({
-        full_name: '테스트 사용자',
-        role: newRole,
-        active_role: newRole,
-        team: 'PMO팀',
-        rank: '수석',
-        total_leave: 15,
-        used_leave: 0,
-        work_start_time: '09:00:00',
-        work_end_time: '18:00:00'
-      });
+      const preset = PRESET_USERS[roleKey] || PRESET_USERS.EXECUTIVE;
+      setCurrentUser(preset);
+      localStorage.setItem(USER_SESSION_KEY, JSON.stringify(preset));
     }
   };
 
-  const userData = useMemo(() => {
-    // [보안 가드] 세션 확인이 끝났는데 유저가 없으면 무조건 null
-    if (sessionVerified && !supabaseUser) return null;
-    
-    // 세션 확인 중일 때만 캐시를 사용해 임시로 보여줌
-    const targetUser = supabaseUser || (profile?.cached_uid ? { id: profile.cached_uid } : null);
-    if (!targetUser) return null;
-    
-    return {
-      id: targetUser.id,
-      email: (supabaseUser as any)?.email || '',
-      name: profile?.full_name || '사용자',
-      team: profile?.team || '소속 없음',
-      rank: profile?.rank || '직급 없음',
-      total_leave: profile?.total_leave || 15,
-      used_leave: profile?.used_leave || 0,
-      work_start_time: profile?.work_start_time || '09:00:00',
-      work_end_time: profile?.work_end_time || '18:00:00'
-    };
-  }, [supabaseUser, profile, sessionVerified]);
+  const loginAsPreset = (presetKey: string) => {
+    let target = PRESET_USERS[presetKey];
+    if (!target) {
+      if (presetKey.includes('kim')) target = PRESET_USERS.EXECUTIVE;
+      else if (presetKey.includes('park') || presetKey.includes('pm')) target = PRESET_USERS.PM;
+      else target = PRESET_USERS.ADMIN;
+    }
+    setCurrentUser(target);
+    localStorage.setItem(USER_SESSION_KEY, JSON.stringify(target));
+    router.push('/');
+  };
+
+  const refreshProfile = async () => {};
 
   return (
     <AuthContext.Provider value={{ 
-      role: profile?.active_role || 'USER', 
-      user: userData, 
+      role: currentUser?.active_role || 'EXECUTIVE', 
+      user: currentUser, 
       loading,
       signOut: handleSignOut,
       refreshProfile,
-      setRole
+      setRole,
+      loginAsPreset
     }}>
       {children}
     </AuthContext.Provider>
@@ -242,11 +139,12 @@ export function useAuth() {
   if (context === undefined) {
     return {
       role: 'EXECUTIVE' as Role,
-      user: null,
+      user: PRESET_USERS.EXECUTIVE,
       loading: false,
       signOut: async () => {},
       refreshProfile: async () => {},
-      setRole: () => {}
+      setRole: () => {},
+      loginAsPreset: () => {}
     };
   }
   return context;

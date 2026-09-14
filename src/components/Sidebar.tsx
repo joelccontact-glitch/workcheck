@@ -42,7 +42,7 @@ interface NavSection {
 export default function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const { role, setRole } = useAuth();
+  const { role, setRole, user } = useAuth();
 
   const currentRole: Role = role === 'USER' ? 'PM' : role;
 
@@ -268,11 +268,30 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        {/* Footer Role Badge & Info */}
-        <div className="p-3.5 border-t border-slate-800 bg-slate-950/60 text-xs text-slate-400">
-          <div className="flex items-center justify-between mb-1">
-            <span className="font-semibold text-slate-300">현재 활성 뷰</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+        {/* Footer Role Badge & User Profile Info */}
+        <div className="p-3 border-t border-slate-800 bg-slate-950/80 text-xs text-slate-400 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-blue-900/60 border border-blue-700/60 flex items-center justify-center text-blue-300 font-black text-xs">
+                {user?.name ? user.name.substring(0, 1) : 'U'}
+              </div>
+              <div className="truncate">
+                <div className="font-bold text-white text-xs truncate">{user?.name || '김철수'} {user?.rank || '전무'}</div>
+                <div className="text-[10px] text-slate-400 truncate">{user?.team || '경영전략실'}</div>
+              </div>
+            </div>
+            <Link
+              href="/login"
+              className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 font-semibold border border-slate-700 transition-colors"
+              title="다른 계정으로 로그인/전환"
+            >
+              로그아웃
+            </Link>
+          </div>
+
+          <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-[10px]">
+            <span className="text-slate-500">활성 권한:</span>
+            <span className={`px-2 py-0.5 rounded-full font-bold border ${
               currentRole === 'EXECUTIVE' ? 'bg-amber-950/80 text-amber-300 border-amber-800/60' :
               currentRole === 'ADMIN' ? 'bg-purple-950/80 text-purple-300 border-purple-800/60' :
               'bg-indigo-950/80 text-indigo-300 border-indigo-800/60'
@@ -282,9 +301,6 @@ export default function Sidebar() {
                '🎯 프로젝트 PM'}
             </span>
           </div>
-          <p className="text-slate-500 text-[11px]">
-            PMO 문의: pmo@daumis.co.kr
-          </p>
         </div>
       </aside>
     </>

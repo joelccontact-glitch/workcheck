@@ -46,7 +46,7 @@ export default function RequestCenter() {
     setLoading(false);
   };
 
-  const leaveUsedPercent = user ? (user.used_leave / user.total_leave) * 100 : 0;
+  const leaveUsedPercent = user ? (((user.used_leave ?? 0) / (user.total_leave ?? 15)) * 100) : 0;
 
   return (
     <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
