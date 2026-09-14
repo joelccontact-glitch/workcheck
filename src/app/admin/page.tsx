@@ -160,17 +160,17 @@ export default function AdminPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleResetInitialData}
-              className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 font-bold text-xs transition-all flex items-center gap-2"
+              className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 font-bold text-xs transition-all flex items-center gap-2 whitespace-nowrap shrink-0"
               title="Firebase DB 데이터 초기화 및 데모 데이터 복원"
             >
-              <RotateCcw size={16} className="text-amber-400" /> 초기 데이터 복원
+              <RotateCcw size={16} className="text-amber-400" /> 데이터 복원
             </button>
 
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all shadow-lg shadow-purple-600/30 flex items-center gap-2"
+              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all shadow-lg shadow-purple-600/30 flex items-center gap-2 whitespace-nowrap shrink-0"
             >
-              <UserPlus size={18} /> 신규 사용자 계정 생성
+              <UserPlus size={18} /> 계정 생성
             </button>
           </div>
         </header>
@@ -235,7 +235,7 @@ export default function AdminPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-400 uppercase font-semibold text-[11px] bg-slate-900/60">
+                <tr className="border-b border-slate-800 text-slate-400 uppercase font-semibold text-[11px] bg-slate-900/60 whitespace-nowrap">
                   <th className="p-3.5">사용자명 / 직급</th>
                   <th className="p-3.5">이메일 계정</th>
                   <th className="p-3.5">소속 부서</th>

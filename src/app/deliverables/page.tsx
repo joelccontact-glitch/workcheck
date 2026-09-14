@@ -96,18 +96,18 @@ export default function DeliverablesPage() {
           {currentRole === 'EXECUTIVE' && (
             <button
               onClick={handleExecutiveApproveAll}
-              className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition-all shadow-lg shadow-amber-600/30 flex items-center gap-1.5"
+              className="px-3.5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition-all shadow-lg shadow-amber-600/30 flex items-center gap-1.5 whitespace-nowrap shrink-0"
             >
-              <Crown size={16} /> 16종 산출물 일괄 최종 승인
+              <Crown size={16} /> 16종 산출물 최종 승인
             </button>
           )}
 
           {currentRole === 'PM' && (
             <button
               onClick={() => alert(`[PM 산출물 업로드] 16종 표준 산출물 파일 첨부 모달이 시작됩니다.`)}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-1.5"
+              className="px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-1.5 whitespace-nowrap shrink-0"
             >
-              <Upload size={16} /> 신규 산출물 파일 업로드
+              <Upload size={16} /> 산출물 업로드
             </button>
           )}
         </header>

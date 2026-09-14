@@ -100,15 +100,15 @@ export default function GateChecksPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleApproveAll}
-                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-lg shadow-emerald-600/30 flex items-center gap-1.5"
+                className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-lg shadow-emerald-600/30 flex items-center gap-1.5 whitespace-nowrap shrink-0"
               >
-                <CheckCircle2 size={16} /> 일괄 PASS 결재 승인
+                <CheckCircle2 size={16} /> 일괄 PASS 승인
               </button>
               <button
                 onClick={handleHoldAction}
-                className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-all shadow-lg shadow-rose-600/30 flex items-center gap-1.5"
+                className="px-3.5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-all shadow-lg shadow-rose-600/30 flex items-center gap-1.5 whitespace-nowrap shrink-0"
               >
-                <ShieldAlert size={16} /> G2 HOLD 처리 & Recovery 소집
+                <ShieldAlert size={16} /> G2 HOLD 처리
               </button>
             </div>
           )}

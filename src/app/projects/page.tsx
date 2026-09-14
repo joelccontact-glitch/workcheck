@@ -103,9 +103,9 @@ export default function ProjectsPage() {
 
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all shadow-lg shadow-blue-600/30 flex items-center gap-2"
+            className="px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all shadow-lg shadow-blue-600/30 flex items-center gap-2 whitespace-nowrap shrink-0"
           >
-            <Plus size={18} /> 신규 프로젝트 등록
+            <Plus size={18} /> 프로젝트 등록
           </button>
         </header>
 

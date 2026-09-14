@@ -123,18 +123,18 @@ export default function IssuesPage() {
           {currentRole === 'EXECUTIVE' && (
             <button
               onClick={handleExecutiveCallMeeting}
-              className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-all shadow-lg shadow-rose-600/30 flex items-center gap-2"
+              className="px-3.5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-all shadow-lg shadow-rose-600/30 flex items-center gap-2 whitespace-nowrap shrink-0"
             >
-              <Crown size={16} /> 경영진 긴급 Recovery 회의 소집
+              <Crown size={16} /> 긴급 Recovery 회의 소집
             </button>
           )}
 
           {currentRole === 'PM' && (
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-2"
+              className="px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-2 whitespace-nowrap shrink-0"
             >
-              <Plus size={18} /> 신규 Risk/Issue 등록
+              <Plus size={18} /> Risk/Issue 등록
             </button>
           )}
         </header>
